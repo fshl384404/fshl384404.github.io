@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(mv \"D:/newbee/blog/.claude\" \"D:/newbee/.claude-temp\")",
+      "Bash(rm -rf \"D:/newbee/blog\")",
+      "Bash(mv \"D:/newbee/blog-temp\" \"D:/newbee/blog\")",
+      "Bash(mv \"D:/newbee/.claude-temp\" \"D:/newbee/blog/.claude\")"
+    ]
+  }
+}
