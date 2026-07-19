@@ -22,6 +22,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Link Butterfly theme
+        run: |
+          mkdir -p themes
+          rm -rf themes/butterfly
+          cp -r node_modules/hexo-theme-butterfly themes/butterfly
+
       - name: Generate static files
         run: npx hexo generate
 
