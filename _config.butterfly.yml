@@ -1002,7 +1002,7 @@ pjax:
 
 # Inject the css and script (aplayer/meting)
 aplayerInject:
-  enable: false
+  enable: true
   per_page: true
 
 # Snackbar - Toast Notification
@@ -1071,7 +1071,33 @@ inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
   bottom:
-    # - <script src="xxxx"></script>
+    - >-
+      <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const ap = new APlayer({
+          container: document.body,
+          fixed: true,
+          mini: true,
+          autoplay: false,
+          theme: '#f0adc2',
+          loop: 'all',
+          order: 'random',
+          preload: 'none',
+          volume: 0.7,
+          mutex: true,
+          lrcType: 0,
+          listFolded: true,
+          audio: [
+            {
+              name: 'bloom',
+              artist: '三木谷奈々',
+              url: '/music/三木谷奈々 - bloom.mp3',
+              cover: '/img/Banner.jpg'
+            }
+          ]
+        });
+      });
+      </script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
