@@ -9,7 +9,15 @@
       "Bash(mv \"D:/newbee/.claude-temp\" \"D:/newbee/blog/.claude\")",
       "Bash(git add *)",
       "Bash(git commit *)",
+<<<<<<< Updated upstream
       "Bash(git push *)"
+=======
+      "Bash(git push *)",
+      "Bash(npx hexo *)",
+      "WebFetch(domain:fshl384404.github.io)",
+      "Bash(curl *)",
+      "Bash(git ls-remote *)"
+>>>>>>> Stashed changes
     ]
   }
 }

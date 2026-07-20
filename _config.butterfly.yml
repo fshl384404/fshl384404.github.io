@@ -55,7 +55,7 @@ social:
 # Image Settings
 # --------------------------------------
 
-favicon: /img/favicon.png
+favicon: /img/favicon.jpg
 
 avatar:
   img: /img/avatar.jpg
@@ -167,8 +167,11 @@ subtitle:
   source: false
   # If you close the typewriter effect, the subtitle will only show the first line of sub
   sub:
-    - 欢迎来到我的技术小岛 🏝️
-    - 记录学习，分享成长
+    - 长沟流月去无声。杏花疏影里，吹笛到天明。
+    - 今夜，我的嗓音是一列被截停的火车，你的名字是俄罗斯漫长的国境线。
+    - 幾千の仲間、幾万の敵の中で、唯君だけが、唯君だけが俺に夢を忘れさせた。
+    - I offer you the loyalty of a man who has never been loyal.
+    - Here I am, sailing the stars and anchoring them, and crowning myself king of the winds.
 
 # Article layout on the homepage
 # 1: Cover on the left, info on the right
@@ -288,7 +291,7 @@ aside:
     category: true
   card_author:
     enable: true
-    description: 学生 / 全栈学习中 / 热爱开源
+    description: 在人间
     button:
       enable: true
       icon: fab fa-github
@@ -296,7 +299,7 @@ aside:
       link: https://github.com/fshl384404
   card_announcement:
     enable: true
-    content: 欢迎来到我的技术小岛 🏝️<br>记录学习与成长的每一步
+    content: 欢迎来到我的岛 🏝️
   card_recent_post:
     enable: true
     # If set 0 will show all
