@@ -638,8 +638,8 @@ twikoo:
 # https://giscus.app/
 giscus:
   repo: fshl384404/fshl384404.github.io
-  repo_id:
-  category_id:
+  repo_id: R_kgDOTdVuig
+  category_id: DIC_kwDOTdVuis4DBhxq
   light_theme: light
   dark_theme: dark_dimmed
   js:
@@ -699,7 +699,7 @@ knocket:
 baidu_analytics:
 
 # https://analytics.google.com/analytics/web/
-google_analytics: G-XXXXXXXXXX
+google_analytics: G-V7LS44RTCW
 
 # https://www.cloudflare.com/zh-tw/web-analytics/
 cloudflare_analytics:
