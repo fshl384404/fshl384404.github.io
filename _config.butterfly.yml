@@ -266,7 +266,7 @@ footer:
   nav:
   owner:
     enable: true
-    since: 2025
+    since: 2026
   # Copyright of theme and framework
   copyright:
     enable: true
@@ -1002,8 +1002,8 @@ pjax:
 
 # Inject the css and script (aplayer/meting)
 aplayerInject:
-  enable: true
-  per_page: false
+  enable: false
+  per_page: true
 
 # Snackbar - Toast Notification
 # https://github.com/polonel/SnackBar
@@ -1069,13 +1069,13 @@ css_prefix: true
 # Insert the code to head (before '</head>' tag) and the bottom (before '</body>' tag)
 inject:
   head:
-    # - <link rel="stylesheet" href="/xxx.css">
+    - <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css">
   bottom:
+    - <script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script>
     - >-
       <script>
       document.addEventListener('DOMContentLoaded', function() {
-        if (typeof APlayer === 'undefined') return;
-        const ap = new APlayer({
+        var ap = new APlayer({
           container: document.body,
           fixed: true,
           mini: true,
