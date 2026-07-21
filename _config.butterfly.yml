@@ -19,7 +19,7 @@ nav:
 
 menu:
   Home: / || fas fa-home
-  Archives: /archives/ || fas fa-archive
+  归档: /archives/ || fas fa-archive
   Categories/Tags: /categories/ || fas fa-th-list
   Projects: /projects/ || fas fa-project-diagram
   Friends: /friends/ || fas fa-link
@@ -55,26 +55,26 @@ social:
 # Image Settings
 # --------------------------------------
 
-favicon: /img/favicon.jpg
+favicon: /favicon.ico
 
 avatar:
-  img: /img/avatar.jpg
+  img: /img/avatar.webp
   effect: true
 
 # Disable all banner images
 disable_top_img: false
 
 # If the banner of page not setting, it will show the default_top_img
-default_top_img: /img/Banner.jpg
+default_top_img: /img/Banner.webp
 
 # The banner image of index page
-index_img: /img/Banner.jpg
+index_img: /img/Banner.webp
 
 # The banner image of archive page
-archive_img: /img/Banner.jpg
+archive_img: /img/Banner.webp
 
 # Note: tag page, not tags page
-tag_img: /img/Banner.jpg
+tag_img: /img/Banner.webp
 
 # The banner image of tag page, you can set the banner image for each tag
 # Format:
@@ -104,7 +104,6 @@ cover:
   archives_enable: true
   # When cover is not set, the default cover is displayed
   default_cover:
-    # - xxx.jpg
 
 # Replace Broken Images
 error_img:
@@ -181,7 +180,7 @@ subtitle:
 # 5: Info displayed on the cover
 # 6: Masonry layout - Cover on top, info on the bottom
 # 7: Masonry layout - Info displayed on the cover
-index_layout: 5
+index_layout: 2
 
 # Display the article introduction on homepage
 # 1: description
@@ -271,7 +270,7 @@ footer:
   copyright:
     enable: true
     version: false
-  custom_text: 风声鹤唳的Island | 记录学习，分享成长
+  custom_text: 风声鹤唳的Island | 记录学习，分享成长<br>本站部分配图来源于网络，侵权请联系删除
 
 # --------------------------------------
 # Aside Settings
@@ -400,7 +399,7 @@ darkmode:
   end:
 
 # Show scroll percent in scroll-to-top button
-rightside_scroll_percent: false
+rightside_scroll_percent: true
 
 # Don't modify the following settings unless you know how they work
 # Choose: readmode,translate,darkmode,hideAside,toc,chat,comment
@@ -767,23 +766,23 @@ site_verification:
 # Theme color for customize
 # Notice: color value must in double quotes like "#000" or may cause error!
 
-# theme_color:
-#   enable: true
-#   main: "#49B1F5"
-#   paginator: "#00c4b6"
-#   button_hover: "#FF7242"
-#   text_selection: "#00c4b6"
-#   link_color: "#99a9bf"
-#   meta_color: "#858585"
-#   hr_color: "#A4D8FA"
-#   code_foreground: "#F47466"
-#   code_background: "rgba(27, 31, 35, .05)"
-#   toc_color: "#00c4b6"
-#   blockquote_padding_color: "#49b1f5"
-#   blockquote_background_color: "#49b1f5"
-#   scrollbar_color: "#49b1f5"
-#   meta_theme_color_light: "ffffff"
-#   meta_theme_color_dark: "#0d0d0d"
+theme_color:
+  enable: true
+  main: "#5b9bd5"
+  paginator: "#e8a850"
+  button_hover: "#e8a850"
+  text_selection: "#5b9bd5"
+  link_color: "#5b9bd5"
+  meta_color: "#858585"
+  hr_color: "#A4D8FA"
+  code_foreground: "#F47466"
+  code_background: "rgba(27, 31, 35, .05)"
+  toc_color: "#5b9bd5"
+  blockquote_padding_color: "#5b9bd5"
+  blockquote_background_color: "#5b9bd5"
+  scrollbar_color: "#5b9bd5"
+  meta_theme_color_light: "ffffff"
+  meta_theme_color_dark: "#0d0d0d"
 
 # The user interface setting of category and tag page
 # Choose: index - same as Homepage UI / default - same as archives UI
@@ -804,7 +803,7 @@ mask:
 
 # Loading Animation
 preloader:
-  enable: false
+  enable: true
   # source
   # 1. fullpage-loading
   # 2. pace (progress bar)
@@ -995,7 +994,7 @@ note:
 
 # https://github.com/MoOx/pjax
 pjax:
-  enable: false
+  enable: true
   # Exclude the specified pages from pjax, such as '/music/'
   exclude:
     # - /xxxxxx/
@@ -1069,7 +1068,172 @@ css_prefix: true
 # Insert the code to head (before '</head>' tag) and the bottom (before '</body>' tag)
 inject:
   head:
+    - |
+      <style>
+        :root { --global-bg: hsl(236, 28%, 95%); }
+        [data-theme="dark"] { --global-bg: hsl(240, 12%, 10%); }
+        #aside-music .aplayer { margin: 0; font-family: inherit; }
+        #aside-music .aplayer .aplayer-list ol li:hover { background: rgba(91,155,213,.1); }
+        #music-toggle.playing { color: var(--btn-color,#5b9bd5); }
+      </style>
   bottom:
+    - |
+      <script>
+      (function(){
+        /* ====== Nav i18n: swap 归档→Archives, 搜索→Search ====== */
+        function swapNav(){
+          var a=document.querySelector('#nav a.site-page[href*="/archives/"] span');
+          if(a&&a.textContent.trim()==='归档')a.textContent=' Archives';
+          var s=document.querySelector('#search-button span span');
+          if(s&&s.textContent.trim()==='搜索')s.textContent=' Search';
+        }
+        document.addEventListener('DOMContentLoaded',swapNav);
+        /* re-run after pjax-like transitions */
+        var t; new MutationObserver(function(){clearTimeout(t);t=setTimeout(swapNav,200);}).observe(document.body,{childList:true,subtree:true});
+      })();
+      </script>
+    - |
+      <script>
+      (function(){
+        var PLID='18169578714';
+        var ap=null;
+        var STORE='blog-music';
+        var CACHE='blog-music-cache';
+        var done=false;
+        var tries=0;
+        var playlistCache=null;
+
+        /* ---- state persistence ---- */
+        function saveState(){
+          if(!ap)return;
+          try{ localStorage.setItem(STORE,JSON.stringify({
+            plid:PLID, idx:ap.list.index, time:ap.audio.currentTime,
+            playing:!ap.audio.paused, volume:ap.audio.volume, mode:ap.mode
+          })); }catch(e){}
+        }
+        function restoreState(){
+          try{
+            var d=JSON.parse(localStorage.getItem(STORE));
+            if(!d||d.plid!==PLID)return false;
+            if(ap){
+              setTimeout(function(){
+                try{ ap.list.switch(d.idx); ap.setMode(d.mode); ap.audio.volume=d.volume||0.7; }catch(e){}
+                setTimeout(function(){ try{if(d.time)ap.audio.currentTime=d.time;if(d.playing)ap.play();}catch(e){} },200);
+              },100);
+              return true;
+            }
+          }catch(e){}
+          return false;
+        }
+
+        /* ---- detach player before pjax replaces DOM ---- */
+        var detached=null;
+        function detachPlayer(){
+          saveState();
+          var w=document.getElementById('aside-music');
+          if(w){ detached=w.parentNode.removeChild(w); }
+        }
+
+        /* ---- toggle button in rightside settings ---- */
+        function buildToggle(){
+          var btn=document.createElement('button');
+          btn.id='music-toggle'; btn.type='button';
+          btn.title='Music Play/Pause';
+          btn.innerHTML='<i class="fas fa-music"></i>';
+          btn.onclick=function(){ if(ap){ if(ap.audio.paused)ap.play();else ap.pause(); } };
+          setInterval(function(){
+            if(ap&&!ap.audio.paused)btn.classList.add('playing');
+            else btn.classList.remove('playing');
+          },1000);
+          return btn;
+        }
+        function insertToggle(){
+          var old=document.getElementById('music-toggle'); if(old)old.remove();
+          var hide=document.getElementById('rightside-config-hide');
+          if(!hide)return;
+          hide.appendChild(buildToggle());
+        }
+
+        /* ---- main init (first load only) ---- */
+        function initMusic(){
+          if(done)return;
+          var aside=document.getElementById('aside-content');
+          if(!aside){ tries++; if(tries<10)setTimeout(initMusic,300); return; }
+          done=true; tries=0;
+
+          // Create sidebar widget
+          var card=document.createElement('div');
+          card.className='card-widget'; card.id='aside-music';
+          card.innerHTML='<div class="item-headline"><i class="fas fa-music"></i><span>Music</span></div><div id="aside-player"></div>';
+          var ann=aside.querySelector('.card-announcement');
+          if(ann)ann.insertAdjacentElement('afterend',card);else aside.insertBefore(card,aside.firstChild);
+
+          function createPlayer(data){
+            ap=new APlayer({
+              container:document.getElementById('aside-player'),
+              fixed:false,mini:false,autoplay:false,theme:'#5b9bd5',
+              loop:'all',order:'list',preload:'auto',volume:0.7,
+              audio:data.map(function(s){return{name:s.title||s.name,artist:s.author||s.artist,url:s.url,cover:s.pic||s.cover,lrc:s.lrc||''};})
+            });
+            ap.on('pause',saveState); ap.on('play',saveState);
+            ap.on('listswitch',saveState); ap.on('modechange',saveState);
+            setInterval(function(){ if(ap&&!ap.audio.paused)saveState(); },5000);
+            window.addEventListener('beforeunload',saveState);
+            if(!restoreState())ap.audio.volume=0.7;
+            insertToggle();
+          }
+
+          if(window.APlayer){
+            fetch('https://api.i-meto.com/meting/api?server=netease&type=playlist&id='+PLID)
+              .then(function(r){return r.json();})
+              .then(function(data){
+                if(!data||!data.length)return;
+                playlistCache=data;
+                createPlayer(data);
+              })
+              .catch(function(){
+                document.getElementById('aside-player').innerHTML='<p style=\"font-size:.85em;color:var(--meta-color)\">🎵 加载失败</p>';
+              });
+          } else {
+            var link=document.createElement('link');
+            link.rel='stylesheet'; link.href='https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css';
+            document.head.appendChild(link);
+            var sc=document.createElement('script');
+            sc.src='https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js';
+            sc.onload=function(){
+              fetch('https://api.i-meto.com/meting/api?server=netease&type=playlist&id='+PLID)
+                .then(function(r){return r.json();})
+                .then(function(data){
+                  if(!data||!data.length)return;
+                  playlistCache=data;
+                  createPlayer(data);
+                });
+            };
+            document.head.appendChild(sc);
+          }
+        }
+
+        /* ---- pjax: detach before, reattach after ---- */
+        document.addEventListener('pjax:send',detachPlayer);
+        document.addEventListener('pjax:complete',function(){
+          if(detached){
+            var aside=document.getElementById('aside-content');
+            if(aside){
+              var ann=aside.querySelector('.card-announcement');
+              if(ann)ann.insertAdjacentElement('afterend',detached);
+              else aside.insertBefore(detached,aside.firstChild);
+            }
+            detached=null;
+          }
+          insertToggle();
+        });
+
+        /* ---- initial load ---- */
+        initMusic();
+        setTimeout(function(){if(!done)initMusic();},500);
+        setTimeout(function(){if(!done)initMusic();},1500);
+      })();
+      </script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
