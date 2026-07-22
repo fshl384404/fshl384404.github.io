@@ -88,6 +88,10 @@ category_img:
 # Format:
 #  - category name: xxxxx
 category_per_img:
+  穷理: /img/categories1.webp
+  履践: /img/categories2.webp
+  漫笔: /img/categories3.webp
+  拾遗: /img/categories4.webp
 
 # The background image of footer
 footer_img: false
@@ -1082,8 +1086,10 @@ inject:
       (function(){
         /* ====== Nav i18n: swap 归档→Archives, 搜索→Search ====== */
         function swapNav(){
-          var a=document.querySelector('#nav a.site-page[href*="/archives/"] span');
-          if(a&&a.textContent.trim()==='归档')a.textContent=' Archives';
+          var items=document.querySelectorAll('a.site-page[href*="/archives/"] span');
+          for(var i=0;i<items.length;i++){
+            if(items[i].textContent.trim()==='归档')items[i].textContent=' Archives';
+          }
           var s=document.querySelector('#search-button span span');
           if(s&&s.textContent.trim()==='搜索')s.textContent=' Search';
         }

@@ -16,8 +16,8 @@ top_img:
 
 ### 📂 项目经历
 
-- electric-billing-system —— 居民用电缴费系统
-- fshl384404.github.io —— 个人技术博客
+- [electric-billing-system](https://github.com/fshl384404/electric-billing-system) —— 居民用电缴费系统
+- [fshl384404.github.io](https://github.com/fshl384404/fshl384404.github.io) —— 个人技术博客
 
 ### 📬 联系方式
 
