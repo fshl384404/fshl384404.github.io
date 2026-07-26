@@ -21,12 +21,11 @@ top_img:
     cursor: pointer;
     overflow: hidden;
     text-decoration: none;
-    transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s cubic-bezier(.4,0,.2,1);
+    transition: box-shadow .15s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,.08);
   }
   .cat-card:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    box-shadow: 0 6px 20px rgba(0,0,0,.18);
   }
   .cat-card:active {
     transform: scale(.97);
@@ -83,8 +82,7 @@ top_img:
   .cat-card .card-count {
     color: rgba(255,255,255,.85);
     font-size: .85em;
-    background: rgba(255,255,255,.15);
-    backdrop-filter: blur(4px);
+    background: rgba(255,255,255,.2);
     border-radius: 20px;
     padding: 3px 12px;
     white-space: nowrap;
@@ -118,7 +116,7 @@ top_img:
 <div id="cat-grid" class="cat-grid">加载中...</div>
 
 <div class="tax-section">
-  <h3>🏷️ 标签</h3>
+  <h3>标签</h3>
   <div class="tax-list" id="tag-list">加载中...</div>
 </div>
 

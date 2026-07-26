@@ -184,7 +184,7 @@ subtitle:
 # 5: Info displayed on the cover
 # 6: Masonry layout - Cover on top, info on the bottom
 # 7: Masonry layout - Info displayed on the cover
-index_layout: 2
+index_layout: 3
 
 # Display the article introduction on homepage
 # 1: description
@@ -1079,6 +1079,24 @@ inject:
         #aside-music .aplayer { margin: 0; font-family: inherit; }
         #aside-music .aplayer .aplayer-list ol li:hover { background: rgba(91,155,213,.1); }
         #music-toggle.playing { color: var(--btn-color,#5b9bd5); }
+        /* h2 left accent bar — replaces emoji as visual anchor */
+        #article-container h2 {
+          position: relative;
+          padding-left: 14px;
+        }
+        #article-container h2::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0.12em;
+          bottom: 0.12em;
+          width: 3px;
+          background: #5b9bd5;
+          border-radius: 2px;
+        }
+        [data-theme="dark"] #article-container h2::before {
+          background: #7db8e8;
+        }
       </style>
   bottom:
     - |
