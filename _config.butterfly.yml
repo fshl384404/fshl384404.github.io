@@ -31,8 +31,8 @@ menu:
 
 code_blocks:
   # Code block theme: darker / pale night / light / ocean / false
-  theme: darker
-  macStyle: true
+  theme: pale night
+  macStyle: false
   # Code block height limit (unit: px)
   height_limit: false
   word_wrap: false
@@ -274,7 +274,7 @@ footer:
   copyright:
     enable: true
     version: false
-  custom_text: 风声鹤唳的Island | 记录学习，分享成长<br>本站部分配图来源于网络，侵权请联系删除
+  custom_text: 风声鹤唳的Island | 记录学习，分享成长
 
 # --------------------------------------
 # Aside Settings
@@ -947,12 +947,12 @@ abcjs:
 # Mermaid
 # https://github.com/mermaid-js/mermaid
 mermaid:
-  enable: false
+  enable: true
   # Write Mermaid diagrams using code blocks
-  code_write: false
+  code_write: true
   # built-in themes: default / forest / dark / neutral
   theme:
-    light: default
+    light: neutral
     dark: dark
   # Enable "Open in New Tab" button to view diagram in a separate window
   open_in_new_tab: true
@@ -1096,6 +1096,67 @@ inject:
         }
         [data-theme="dark"] #article-container h2::before {
           background: #7db8e8;
+        }
+        /* code blocks — Kimi-style via CSS variable override */
+        .container figure.highlight {
+          --hl-bg: #1f1f1f;
+          --hltools-bg: #1a1a1a;
+          --hltools-color: rgba(255,255,255,0.4);
+          --hlnumber-bg: #1f1f1f;
+          --hlnumber-color: rgba(255,255,255,0.2);
+          --hl-color: #e6e6e6;
+          --hlscrollbar-bg: #333;
+          border-radius: 12px;
+          margin: 1.2em 0;
+          outline: 0.5px solid rgba(128,128,128,0.18);
+          outline-offset: -0.5px;
+        }
+        .container figure.highlight .highlight-tools {
+          padding: 5px 14px;
+          height: auto;
+          min-height: unset;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+          border-bottom: 0.5px solid rgba(255,255,255,0.07);
+        }
+        .container figure.highlight .highlight-tools .code-lang {
+          font-size: 12px;
+          font-weight: 500;
+          text-transform: none;
+        }
+        .container figure.highlight .highlight-tools i {
+          color: rgba(255,255,255,0.3);
+        }
+        .container figure.highlight .highlight-tools i:hover {
+          color: rgba(255,255,255,0.7);
+        }
+        .container figure.highlight .gutter pre {
+          padding-left: 14px;
+          padding-right: 8px;
+        }
+        [data-theme="dark"] .container figure.highlight {
+          --hl-bg: #1a1a1a;
+          --hltools-bg: #161616;
+          --hlnumber-bg: #1a1a1a;
+          outline-color: rgba(255,255,255,0.08);
+        }
+        /* Mermaid — compact & styled to match */
+        .mermaid-wrap {
+          max-height: 500px;
+          overflow: auto;
+          background: #1f1f1f;
+          border-radius: 12px;
+          outline: 0.5px solid rgba(128,128,128,0.18);
+          outline-offset: -0.5px;
+          padding: 16px;
+          margin: 1.2em 0;
+        }
+        .mermaid-wrap > svg {
+          max-width: 100%;
+          height: auto;
+        }
+        [data-theme="dark"] .mermaid-wrap {
+          background: #1a1a1a;
+          outline-color: rgba(255,255,255,0.08);
         }
       </style>
   bottom:
