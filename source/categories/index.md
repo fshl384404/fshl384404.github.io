@@ -170,11 +170,15 @@ top_img:
           setTimeout(function(){ card.style.transform = ''; }, 240);
           return;
         }
-        /* has content: ripple then navigate */
+        /* has content: ripple then navigate via pjax to avoid full reload */
         e.preventDefault();
         var href = card.getAttribute('href');
         setTimeout(function(){
-          window.location.href = href;
+          if (window.pjax) {
+            window.pjax.loadUrl(href);
+          } else {
+            window.location.href = href;
+          }
         }, 250);
       });
     }
@@ -185,6 +189,24 @@ top_img:
       th += '<a class="tag" href="/categories/' + encodeURIComponent(t) + '/">' + t + ' <sup>' + tags[t] + '</sup></a>';
     });
     document.getElementById('tag-list').innerHTML = th || '暂无标签';
+
+    /* route tag pill clicks through pjax to avoid full reload */
+    document.getElementById('tag-list').addEventListener('click', function(e){
+      var el = e.target;
+      while (el && el !== this) {
+        if (el.tagName === 'A' && el.classList.contains('tag')) {
+          e.preventDefault();
+          var href = el.getAttribute('href');
+          if (window.pjax) {
+            window.pjax.loadUrl(href);
+          } else {
+            window.location.href = href;
+          }
+          return;
+        }
+        el = el.parentNode;
+      }
+    });
   });
 })();
 </script>

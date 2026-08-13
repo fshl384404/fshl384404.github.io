@@ -1187,6 +1187,8 @@ inject:
         var done=false;
         var tries=0;
         var playlistCache=null;
+        var toggleTimer=null;
+        var saveTimer=null;
 
         /* ---- state persistence ---- */
         function saveState(){
@@ -1211,14 +1213,6 @@ inject:
           return false;
         }
 
-        /* ---- detach player before pjax replaces DOM ---- */
-        var detached=null;
-        function detachPlayer(){
-          saveState();
-          var w=document.getElementById('aside-music');
-          if(w){ detached=w.parentNode.removeChild(w); }
-        }
-
         /* ---- toggle button in rightside settings ---- */
         function buildToggle(){
           var btn=document.createElement('button');
@@ -1226,7 +1220,8 @@ inject:
           btn.title='Music Play/Pause';
           btn.innerHTML='<i class="fas fa-music"></i>';
           btn.onclick=function(){ if(ap){ if(ap.audio.paused)ap.play();else ap.pause(); } };
-          setInterval(function(){
+          if(toggleTimer)clearInterval(toggleTimer);
+          toggleTimer=setInterval(function(){
             if(ap&&!ap.audio.paused)btn.classList.add('playing');
             else btn.classList.remove('playing');
           },1000);
@@ -1262,7 +1257,8 @@ inject:
             });
             ap.on('pause',saveState); ap.on('play',saveState);
             ap.on('listswitch',saveState); ap.on('modechange',saveState);
-            setInterval(function(){ if(ap&&!ap.audio.paused)saveState(); },5000);
+            if(saveTimer)clearInterval(saveTimer);
+            saveTimer=setInterval(function(){ if(ap&&!ap.audio.paused)saveState(); },5000);
             window.addEventListener('beforeunload',saveState);
             if(!restoreState())ap.audio.volume=0.7;
             insertToggle();
@@ -1298,20 +1294,26 @@ inject:
           }
         }
 
-        /* ---- pjax: detach before, reattach after ---- */
-        document.addEventListener('pjax:send',detachPlayer);
-        document.addEventListener('pjax:complete',function(){
-          if(detached){
+        /* ---- pjax: move player outside #body-wrap before DOM swap, move back after ---- */
+        function movePlayerOut(){
+          saveState();
+          var w=document.getElementById('aside-music');
+          if(w){ document.body.appendChild(w); }  // keep in DOM, just outside #body-wrap
+        }
+        function movePlayerBack(){
+          var w=document.getElementById('aside-music');
+          if(w){
             var aside=document.getElementById('aside-content');
             if(aside){
               var ann=aside.querySelector('.card-announcement');
-              if(ann)ann.insertAdjacentElement('afterend',detached);
-              else aside.insertBefore(detached,aside.firstChild);
+              if(ann)ann.insertAdjacentElement('afterend',w);
+              else aside.insertBefore(w,aside.firstChild);
             }
-            detached=null;
           }
           insertToggle();
-        });
+        }
+        document.addEventListener('pjax:send', movePlayerOut);
+        document.addEventListener('pjax:complete', movePlayerBack);
 
         /* ---- initial load ---- */
         initMusic();

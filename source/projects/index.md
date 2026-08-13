@@ -42,7 +42,7 @@ top_img:
   <div class="article-sort-item">
     <div class="article-sort-item-info">
       <div class="article-sort-item-time"><i class="far fa-calendar-alt"></i> 2026.06</div>
-      <a class="article-sort-item-title" href="https://github.com/fshl384404/electric-billing-system" target="_blank">居民用电缴费系统</a>
+      <a class="article-sort-item-title" href="https://github.com/fshl384404/electric-billing-system" target="_blank">搭载AI客服的居民用电缴费系统</a>
       <div class="project-stack">
         <span class="be">Java 24</span><span class="be">Spring Boot 3.4</span><span class="db">Oracle</span>
         <span class="fe">Vue 3</span><span class="fe">Element Plus</span><span class="be">MyBatis-Plus</span>
