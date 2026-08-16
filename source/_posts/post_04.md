@@ -9,7 +9,7 @@ tags:
   - Debian
   - 虚拟机
   - 操作系统
-description: 面向零基础者的Arch Linux虚拟机安装详细教程，附赠Debian Linux虚拟机安装教程。
+description: 面向零基础者的Arch Linux虚拟机安装详细教程，附赠Debian Linux虚拟机安装教程
 cover: /img/blog4.webp
 ---
 
@@ -92,7 +92,7 @@ ping -c 3 archlinux.org
 archinstall
 ```
 
-进入archinstall主界面后，跟随系统引导逐步完成以下设置：
+进入`archinstall`主界面后，跟随系统引导逐步完成以下设置：
 
 | 配置项 | 推荐设置 |
 |--------|----------|
@@ -214,6 +214,10 @@ GLFW_IM_MODULE=ibus
 ---
 
 ## 常见问题
+
+**Q：archinstall脚本安装还是太难了，有没有更简单的方法？**
+A： ~~有的，在确认网络连接后，执行`pacman -Sy opencode`命令安装开源AI代理工具 OpenCode，再输入`opencode`打开 OpenCode 终端用户界面，输入`/connect`来选择你想要使用的提供商并添加其 API 密钥，确认模型后告诉它“We are in the archISO live, auto install archlinux”，之后同意接下来的全部请求，听天由命即可。~~ 
+没有，请移步下一节。
 
 **Q：安装好后进入桌面环境不会操作？**
 A：如果你没有顺便安装终端模拟器，可以通过快捷键Ctrl + Alt + F3 进入虚拟终端（TTY），输入账号密码后执行相关命令。必须注意的是，由于与VMware Workstation Pro的热键冲突，要想要将包含Ctrl + Alt的键组合直接发送到客户机，先按Ctl + Alt + Space，再释放空格键，同时不要释放Ctrl + Alt，然后按所需的键。
