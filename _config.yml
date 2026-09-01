@@ -98,8 +98,13 @@ ignore:
 search:
   path: search.xml
   field: post
-  content: true
+  content: false
   format: html
+
+# Sitemap
+## https://github.com/hexojs/hexo-generator-sitemap
+sitemap:
+  path: sitemap.xml
 
 # Extensions
 ## Plugins: https://hexo.io/plugins/
