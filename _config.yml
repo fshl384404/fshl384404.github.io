@@ -112,3 +112,10 @@ deploy:
   type: git
   repo: https://github.com/fshl384404/fshl384404.github.io.git
   branch: main
+
+# Markdown rendering
+## https://github.com/hexojs/hexo-renderer-marked
+marked:
+  # Disable smartypants, otherwise it corrupts LaTeX math formulas
+  # (e.g. `f'(x)` -> `f’(x)`, `--` -> en-dash)
+  smartypants: false

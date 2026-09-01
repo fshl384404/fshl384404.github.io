@@ -19,7 +19,7 @@ nav:
 
 menu:
   Home: / || fas fa-home
-  归档: /archives/ || fas fa-archive
+  Archives: /archives/ || fas fa-archive
   Categories/Tags: /categories/ || fas fa-th-list
   Projects: /projects/ || fas fa-project-diagram
   Friends: /friends/ || fas fa-link
@@ -171,6 +171,7 @@ subtitle:
   # If you close the typewriter effect, the subtitle will only show the first line of sub
   sub:
     - 长沟流月去无声。杏花疏影里，吹笛到天明。
+    - 当我跨过沉沦的一切，向着永恒开战的时候，你是我的军旗。
     - 今夜，我的嗓音是一列被截停的火车，你的名字是俄罗斯漫长的国境线。
     - 幾千の仲間、幾万の敵の中で、唯君だけが、唯君だけが俺に夢を忘れさせた。
     - I offer you the loyalty of a man who has never been loyal.
@@ -302,7 +303,7 @@ aside:
       link: https://github.com/fshl384404
   card_announcement:
     enable: true
-    content: 欢迎来到我的岛 🏝️
+    content: 月まで届け
   card_recent_post:
     enable: true
     # If set 0 will show all
@@ -463,7 +464,7 @@ busuanzi:
 math:
   # Choose: mathjax, katex
   # Leave it empty if you don't need math
-  use:
+  use: mathjax
   per_page: true
   hide_scrollbar: false
 
@@ -1097,18 +1098,19 @@ inject:
         [data-theme="dark"] #article-container h2::before {
           background: #7db8e8;
         }
-        /* code blocks — Kimi-style via CSS variable override */
+        /* ===== code blocks — dual-theme (light default / dark) ===== */
+        /* light mode: GitHub Light palette */
         .container figure.highlight {
-          --hl-bg: #1f1f1f;
-          --hltools-bg: #1a1a1a;
-          --hltools-color: rgba(255,255,255,0.4);
-          --hlnumber-bg: #1f1f1f;
-          --hlnumber-color: rgba(255,255,255,0.2);
-          --hl-color: #e6e6e6;
-          --hlscrollbar-bg: #333;
+          --hl-bg: #f6f8fa;
+          --hltools-bg: #eef1f4;
+          --hltools-color: #57606a;
+          --hlnumber-bg: #f6f8fa;
+          --hlnumber-color: rgba(27,31,35,0.4);
+          --hl-color: #24292f;
+          --hlscrollbar-bg: #d0d7de;
           border-radius: 12px;
           margin: 1.2em 0;
-          outline: 0.5px solid rgba(128,128,128,0.18);
+          outline: 0.5px solid rgba(27,31,35,0.12);
           outline-offset: -0.5px;
         }
         .container figure.highlight .highlight-tools {
@@ -1116,7 +1118,7 @@ inject:
           height: auto;
           min-height: unset;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-          border-bottom: 0.5px solid rgba(255,255,255,0.07);
+          border-bottom: 0.5px solid rgba(27,31,35,0.08);
         }
         .container figure.highlight .highlight-tools .code-lang {
           font-size: 12px;
@@ -1124,28 +1126,134 @@ inject:
           text-transform: none;
         }
         .container figure.highlight .highlight-tools i {
-          color: rgba(255,255,255,0.3);
+          color: rgba(27,31,35,0.35);
         }
         .container figure.highlight .highlight-tools i:hover {
-          color: rgba(255,255,255,0.7);
+          color: #0969da;
         }
         .container figure.highlight .gutter pre {
           padding-left: 14px;
           padding-right: 8px;
         }
+        /* light-mode token colors (GitHub Light) */
+        .container figure.highlight pre .comment,
+        .container figure.highlight pre .meta { color: #6a737d; }
+        .container figure.highlight pre .keyword,
+        .container figure.highlight pre .title,
+        .container figure.highlight pre .css .hexcolor { color: #d73a49; }
+        .container figure.highlight pre .string,
+        .container figure.highlight pre .value,
+        .container figure.highlight pre .inheritance,
+        .container figure.highlight pre .header,
+        .container figure.highlight pre .ruby .symbol,
+        .container figure.highlight pre .xml .cdata,
+        .container figure.highlight pre .special,
+        .container figure.highlight pre .formula { color: #032f62; }
+        .container figure.highlight pre .number,
+        .container figure.highlight pre .preprocessor,
+        .container figure.highlight pre .literal,
+        .container figure.highlight pre .params,
+        .container figure.highlight pre .constant,
+        .container figure.highlight pre .command { color: #005cc5; }
+        .container figure.highlight pre .built_in { color: #e36209; }
+        .container figure.highlight pre .function,
+        .container figure.highlight pre .python .decorator,
+        .container figure.highlight pre .python .title,
+        .container figure.highlight pre .ruby .function .title,
+        .container figure.highlight pre .ruby .title .keyword,
+        .container figure.highlight pre .perl .sub,
+        .container figure.highlight pre .javascript .title,
+        .container figure.highlight pre .coffeescript .title { color: #6f42c1; }
+        .container figure.highlight pre .tag { color: #22863a; }
+        .container figure.highlight pre .variable,
+        .container figure.highlight pre .attribute,
+        .container figure.highlight pre .regexp,
+        .container figure.highlight pre .ruby .constant,
+        .container figure.highlight pre .xml .tag .title,
+        .container figure.highlight pre .xml .pi,
+        .container figure.highlight pre .xml .doctype,
+        .container figure.highlight pre .html .doctype,
+        .container figure.highlight pre .css .id,
+        .container figure.highlight pre .tag .name,
+        .container figure.highlight pre .css .class,
+        .container figure.highlight pre .css .pseudo { color: #e36209; }
+        .container figure.highlight pre .tag .attr,
+        .container figure.highlight pre .javascript .function { color: #6f42c1; }
+        .container figure.highlight pre .deletion { color: #b31d28; }
+        .container figure.highlight pre .addition { color: #22863a; }
+        /* dark mode: keep existing Kimi-style block */
         [data-theme="dark"] .container figure.highlight {
           --hl-bg: #1a1a1a;
           --hltools-bg: #161616;
+          --hltools-color: rgba(255,255,255,0.4);
           --hlnumber-bg: #1a1a1a;
+          --hlnumber-color: rgba(255,255,255,0.2);
+          --hl-color: #e6e6e6;
+          --hlscrollbar-bg: #333;
           outline-color: rgba(255,255,255,0.08);
         }
-        /* Mermaid — compact & styled to match */
+        [data-theme="dark"] .container figure.highlight .highlight-tools {
+          border-bottom: 0.5px solid rgba(255,255,255,0.07);
+        }
+        [data-theme="dark"] .container figure.highlight .highlight-tools i {
+          color: rgba(255,255,255,0.3);
+        }
+        [data-theme="dark"] .container figure.highlight .highlight-tools i:hover {
+          color: rgba(255,255,255,0.7);
+        }
+        /* dark-mode token colors — restore pale night palette */
+        [data-theme="dark"] .container figure.highlight pre .comment,
+        [data-theme="dark"] .container figure.highlight pre .meta { color: #676E95; }
+        [data-theme="dark"] .container figure.highlight pre .keyword,
+        [data-theme="dark"] .container figure.highlight pre .title,
+        [data-theme="dark"] .container figure.highlight pre .css .hexcolor { color: #89DDFF; }
+        [data-theme="dark"] .container figure.highlight pre .string,
+        [data-theme="dark"] .container figure.highlight pre .value,
+        [data-theme="dark"] .container figure.highlight pre .inheritance,
+        [data-theme="dark"] .container figure.highlight pre .header,
+        [data-theme="dark"] .container figure.highlight pre .ruby .symbol,
+        [data-theme="dark"] .container figure.highlight pre .xml .cdata,
+        [data-theme="dark"] .container figure.highlight pre .special,
+        [data-theme="dark"] .container figure.highlight pre .formula { color: #C3E88D; }
+        [data-theme="dark"] .container figure.highlight pre .number,
+        [data-theme="dark"] .container figure.highlight pre .preprocessor,
+        [data-theme="dark"] .container figure.highlight pre .literal,
+        [data-theme="dark"] .container figure.highlight pre .params,
+        [data-theme="dark"] .container figure.highlight pre .constant,
+        [data-theme="dark"] .container figure.highlight pre .command { color: #F78C6C; }
+        [data-theme="dark"] .container figure.highlight pre .built_in { color: #FFCB6B; }
+        [data-theme="dark"] .container figure.highlight pre .function,
+        [data-theme="dark"] .container figure.highlight pre .python .decorator,
+        [data-theme="dark"] .container figure.highlight pre .python .title,
+        [data-theme="dark"] .container figure.highlight pre .ruby .function .title,
+        [data-theme="dark"] .container figure.highlight pre .ruby .title .keyword,
+        [data-theme="dark"] .container figure.highlight pre .perl .sub,
+        [data-theme="dark"] .container figure.highlight pre .javascript .title,
+        [data-theme="dark"] .container figure.highlight pre .coffeescript .title { color: #82AAFF; }
+        [data-theme="dark"] .container figure.highlight pre .tag { color: #89DDFF; }
+        [data-theme="dark"] .container figure.highlight pre .variable,
+        [data-theme="dark"] .container figure.highlight pre .attribute,
+        [data-theme="dark"] .container figure.highlight pre .regexp,
+        [data-theme="dark"] .container figure.highlight pre .ruby .constant,
+        [data-theme="dark"] .container figure.highlight pre .xml .tag .title,
+        [data-theme="dark"] .container figure.highlight pre .xml .pi,
+        [data-theme="dark"] .container figure.highlight pre .xml .doctype,
+        [data-theme="dark"] .container figure.highlight pre .html .doctype,
+        [data-theme="dark"] .container figure.highlight pre .css .id,
+        [data-theme="dark"] .container figure.highlight pre .tag .name,
+        [data-theme="dark"] .container figure.highlight pre .css .class,
+        [data-theme="dark"] .container figure.highlight pre .css .pseudo { color: #FF5370; }
+        [data-theme="dark"] .container figure.highlight pre .tag .attr,
+        [data-theme="dark"] .container figure.highlight pre .javascript .function { color: #C792EA; }
+        [data-theme="dark"] .container figure.highlight pre .deletion { color: #BF42BF; }
+        [data-theme="dark"] .container figure.highlight pre .addition { color: #105EDE; }
+        /* Mermaid — compact, dual-theme container */
         .mermaid-wrap {
           max-height: 500px;
           overflow: auto;
-          background: #1f1f1f;
+          background: #ffffff;
           border-radius: 12px;
-          outline: 0.5px solid rgba(128,128,128,0.18);
+          outline: 0.5px solid rgba(27,31,35,0.12);
           outline-offset: -0.5px;
           padding: 16px;
           margin: 1.2em 0;

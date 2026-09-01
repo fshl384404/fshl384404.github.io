@@ -1,0 +1,19 @@
+- class_name: 朋友们的博客
+  class_desc: 志同道合的朋友们
+  link_list:
+    - name: 占位示例
+      link: https://example.com
+      avatar: https://example.com/avatar.png
+      descr: 一个热爱技术的朋友
+
+- class_name: 推荐资源
+  class_desc: 日常在用的优质技术资源
+  link_list:
+    - name: Stack Overflow
+      link: https://stackoverflow.com
+      avatar: https://stackoverflow.com/favicon.ico
+      descr: 全球最大的开发者问答社区
+    - name: GitHub Trending
+      link: https://github.com/trending
+      avatar: https://github.com/favicon.ico
+      descr: 发现热门开源项目

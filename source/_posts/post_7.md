@@ -1,20 +1,20 @@
 ---
-title: Python数据分析完全入门指南
-date: 2026-08-16 23:00:00
-updated: 2026-08-16 23:00:00
+title: 从Python基础到数据分析
+date: 2026-08-23 23:00:00
+updated: 2026-08-23 23:00:00
 categories:
   - 穷理
 tags:
   - Python
   - 机器学习
   - 数据分析
-description: 以 Wes McKinney 《利用 Python 进行数据分析》为蓝本，结合 Python 数据科学生态近年来的发展重新编排与扩充
-cover: /img/blog6.webp
+description: 以 Wes McKinney《利用 Python 进行数据分析》为蓝本，结合 Python 数据科学生态近年来的发展重新编排与扩充
+cover: /img/blog7.webp
 ---
 
-> 因全文篇幅较长，建议读者视情况分章节阅读学习。
+> 本文是作者对 Wes McKinney 所著《利用 Python 进行数据分析（第二版）》的学习记录，后文中以“原书”代指。因全文篇幅较长，建议读者视情况分章节阅读学习。
 
-**版本基准**：文中所有示例基于 Python 3.11+、pandas 3.0+、NumPy 2.0+ 等现代版本，并以"注意"形式标注了原书旧写法与现行写法之间的差异（如 df.map 取代 applymap、频率代码 ME 取代 M、pd.Grouper 取代 pd.TimeGrouper、patsy 公式接口变更等）。pandas 3.0 起默认启用的写时复制（Copy-on-Write）与 Arrow 字符串存储等新特性也在对应章节予以说明。
+**版本基准**：文中所有示例基于 Python 3.11+、pandas 3.0+、NumPy 2.0+ 等现代版本，并以"注意"形式标注原书旧写法与现行写法的差异。主要变更集中对照：`df.map` 取代 `applymap`、频率代码 `ME`/`YE`/`QE` 取代 `M`/`A`/`Q`、`pd.Grouper` 取代 `pd.TimeGrouper`、`pd.concat` 取代 `df.append`、`loc`/`iloc` 取代 `ix`、`inplace=True` 改为重新赋值、`fillna(method=)` 改为 `ffill`/`bfill`、`np.random.seed` + 全局函数改为 `default_rng()`。pandas 3.0 起默认启用的写时复制（Copy-on-Write）与 Arrow 字符串存储等新特性也在对应章节予以说明。注意：频率代码的 `'E'` 后缀重命名仅适用于 Timestamp 频率（`date_range`、`resample` 等），**Period 对象仍使用 `M`/`Y`/`Q` 代码**（如 `freq='Q-DEC'`），详见"时期（Period）与季度数据"一节。
 
 ---
 
@@ -139,7 +139,6 @@ import statsmodels.formula.api as smf
 
 ## 交互式开发环境：IPython 与 Jupyter
 
-
 **本章目标**：理解交互式计算的工作方式；掌握 IPython 的核心功能；熟悉 Jupyter 的工作流。
 
 ### 交互式环境的必要性
@@ -197,7 +196,7 @@ print(value, ..., sep=' ', end='\n', file=sys.stdout, flush=False)
 
 ### 魔术命令
 
-魔术命令（magic command）是 IPython 特有的命令，用于完成 Python 语法无法实现的系统级操作，通常以 `%` 或 `%%` 为前缀。% 前缀表示行级魔术命令，只作用于当前行；%% 前缀表示单元级魔术命令，作用于整个代码单元。常用命令如下：
+魔术命令（magic command）是 IPython 特有的命令，用于扩展交互式会话的能力（如计时、调试、绘图内嵌等），通常以 `%` 或 `%%` 为前缀。% 前缀表示行级魔术命令，只作用于当前行；%% 前缀表示单元级魔术命令，作用于整个代码单元。常用命令如下：
 
 | 命令 | 作用 |
 |---|---|
@@ -212,14 +211,14 @@ print(value, ..., sep=' ', end='\n', file=sys.stdout, flush=False)
 | `%reset` | 清空命名空间 |
 | `%pip install 包名` | 在 Notebook 中安装包（Jupyter 专用） |
 
-魔术命令的返回值可赋给变量（`foo = %pwd`）；默认可省略 `%`（自动魔术）。判断两段代码的性能差异应以 `%timeit` 的测量结果为准，而非主观估计。
+魔术命令的返回值可赋给变量（`foo = %pwd`）；默认可省略 `%`（自动魔术）。调试、计时与性能分析等进阶用法见"附录：NumPy 进阶与 IPython 生产力"。
 
 ### Jupyter Notebook / JupyterLab 工作流
 
 #### 启动与基本操作
 
 ```bash
-$ jupyter lab        # 现代版本（原书中的 jupyter notebook 命令仍可用）
+jupyter lab        # 现代版本（原书中的 jupyter notebook 命令仍可用）
 ```
 
 浏览器打开后，通过 New → Python 3 内核新建笔记本。代码单元格中输入代码后按 Shift-Enter 执行，输出（含图表）直接显示在单元格下方。单元格有两种模式：代码模式（编写 Python）与 Markdown 模式（编写文档，支持标题、列表、公式）。两者交替使用即可形成"可执行的报告"。
@@ -242,10 +241,6 @@ $ jupyter lab        # 现代版本（原书中的 jupyter notebook 命令仍可
 | Esc → dd | 删除单元格 |
 | Esc → 0,0 | 重启内核 |
 | Ctrl-S | 保存（运行结果存入 `.ipynb`） |
-
-### IPython 键盘快捷键（shell 模式）
-
-IPython shell 支持 Emacs 风格导航：`Ctrl-P`/`Ctrl-N`（上下翻历史）、`Ctrl-R`（反向增量搜索历史）、`Ctrl-A`（行首）、`Ctrl-E`（行尾）、`Ctrl-K`（删除至行尾）、`Ctrl-C`（中断运行中的代码）。这些快捷键在交互式探索中会频繁使用。
 
 ---
 
@@ -279,24 +274,17 @@ for x in array:
 
 #### 变量是引用
 
-变量名是对对象的绑定（bind），赋值不会复制数据：
+变量名是对对象的绑定（bind），赋值不会复制数据。判断两个名称是否指向同一对象使用 `is`，判断值是否相等使用 `==`：
 
 ```python
 a = [1, 2, 3]
-b = a            # b 与 a 指向同一个列表对象
+b = a                    # b 与 a 指向同一个列表对象
+c = list(a)              # list() 显式创建新列表（复制）
 a.append(4)
-b                # [1, 2, 3, 4] —— b 随之改变
-```
-
-理解数据何时被复制、何时仅共享引用，是避免隐蔽缺陷的关键。判断两个名称是否指向同一对象使用 `is`，判断值是否相等使用 `==`：
-
-```python
-a = [1, 2, 3]
-b = a
-c = list(a)      # list() 显式创建新列表（复制）
-a is b           # True —— 同一对象
-a is c           # False
-a == c           # True —— 值相等
+b                        # [1, 2, 3, 4] —— b 随之改变
+a is b                   # True —— 同一对象
+a is c                   # False
+a == c                   # True —— 值相等
 ```
 
 #### 动态引用与强类型
@@ -343,11 +331,9 @@ isiterable(5)        # False
 #### 数值类型
 
 ```python
-ival = 17239871
-ival ** 6                    # 大整数运算无溢出
-fval = 7.243
 3 / 2                        # 1.5（除法返回浮点数）
 3 // 2                       # 1（底除，丢弃小数部分）
+17239871 ** 6                # 大整数运算无溢出（任意精度）
 ```
 
 #### 字符串
@@ -355,20 +341,10 @@ fval = 7.243
 字符串是不可变对象，所有"修改"操作均返回新字符串，原字符串不变：
 
 ```python
-a = 'this is a string'
-b = a.replace('string', 'longer string')   # b 为新字符串
-a                                          # 原字符串不变
-
-# 切片（字符串是字符序列）
 s = 'python'
-s[:3]        # 'pyt'
-list(s)      # ['p', 'y', 't', 'h', 'o', 'n']
-
-# 原始字符串 r''：反斜杠不转义
-s = r'this\has\no\special\characters'
-
-# 连接
+s[:3]        # 'pyt'（切片：字符串是字符序列）
 '::'.join(['a', 'b', 'c'])    # 'a::b::c'（join 效率高于 +）
+r'this\has\no\special\characters'   # 原始字符串：反斜杠不转义
 ```
 
 f-string 是当前字符串格式化的主要方式（原书使用 `.format()`）：
@@ -395,14 +371,12 @@ val.encode('utf-8').decode('utf-8')  # 'español'
 `datetime` 是标准库中处理日期时间的基础类型，pandas 的时间序列功能（见"时间序列分析"一章）构建于其上：
 
 ```python
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, timedelta
 dt = datetime(2011, 10, 29, 20, 30, 21)
-dt.day; dt.minute                       # 访问字段
-dt.strftime('%m/%d/%Y %H:%M')           # datetime -> 字符串
+dt.strftime('%Y-%m-%d %H:%M')           # datetime -> 字符串
 datetime.strptime('20091031', '%Y%m%d') # 字符串 -> datetime
 dt.replace(minute=0, second=0)          # 替换字段（产生新对象）
-dt2 - dt                                # 两个 datetime 之差 -> timedelta
-dt + timedelta(12)                      # timedelta 运算
+dt + timedelta(12)                      # 日期运算 -> timedelta
 ```
 
 常用格式码：`%Y` 四位年份、`%m` 月份、`%d` 日、`%H` 时（24 小时制）、`%M` 分、`%S` 秒。
@@ -436,8 +410,6 @@ while x > 0:
 
 # range：生成整数序列（不含终点），内存占用极小
 list(range(0, 20, 2))     # [0, 2, 4, ..., 18]
-for i in range(len(sequence)):  # 按序号迭代
-    ...
 
 # 三元表达式：单行 if-else
 value = 'Non-negative' if x >= 0 else 'Negative'
@@ -460,18 +432,15 @@ Python 内建四种核心数据结构，其适用场景不同：
 
 #### 元组（tuple）
 
-元组是固定长度、不可变的序列。其两个价值：数据完整性（防止意外修改）与可哈希性（可作为字典键、集合元素）：
+元组是固定长度、不可变的序列。其两大价值：数据完整性（防止意外修改）与可哈希性（可作为字典键、集合元素）：
 
 ```python
 tup = 4, 5, 6                     # 逗号即构成元组
-nested = (4, 5, 6), (7, 8)        # 嵌套
-tuple(['foo', [1, 2], True])      # 任意序列转元组
 tup[0]                            # 索引从 0 开始
 
 # 元组拆包（unpacking）
 a, b, c = (4, 5, 6)
-a, b, *rest = 1, 2, 3, 4, 5       # rest = [3, 4, 5]（* 抓取剩余元素）
-a, b, *_ = values                 # 使用 _ 表示丢弃
+a, b, *rest = 1, 2, 3, 4, 5       # * 抓取剩余元素: rest = [3, 4, 5]
 b, a = a, b                       # 变量交换可通过拆包一行完成
 
 # 函数返回多个值（本质是返回元组后自动拆包）
@@ -492,12 +461,9 @@ a_list.pop(2)                     # 移除并返回指定位置元素
 a_list.remove('dwarf')           # 移除第一个匹配值
 'foo' in a_list                   # 成员测试（线性搜索，较慢）
 
-# 串联：+ 会新建并复制；extend 原地扩展（大列表效率更高）
 x = [4, None, 'foo']
-x.extend([7, 8, (2, 3)])
-
-# 排序：sort 原地排序；sorted 返回新列表
-a = [7, 2, 5, 1, 3]; a.sort()
+x.extend([7, 8, (2, 3)])          # 原地扩展（+ 会新建并复制，大列表用 extend）
+a = [7, 2, 5, 1, 3]; a.sort()     # sort 原地排序；sorted 返回新列表
 b = ['saw', 'small', 'He', 'foxes', 'six']
 b.sort(key=len)                   # 按长度排序
 ```
@@ -525,16 +491,12 @@ seq[::-1]       # 反转
 for i, value in enumerate(collection):
     ...
 
-# sorted：返回新的排序列表（参数与 sort 一致）
-sorted([7, 1, 2, 6, 0, 3, 2])
-
 # zip：将多个序列配对；zip(*x) 反向解压
-list(zip(['foo', 'bar'], ['one', 'two']))
-# [('foo', 'one'), ('bar', 'two')]
-first_names, last_names = zip(*pitchers)   # 行的列表 -> 列的列表
+list(zip(['foo', 'bar'], ['one', 'two']))   # [('foo', 'one'), ('bar', 'two')]
+first_names, last_names = zip(*pitchers)    # 行的列表 -> 列的列表
 
-# reversed：反向迭代（惰性生成器）
-list(reversed(range(10)))
+# sorted：返回新的排序列表；reversed：反向迭代（惰性）
+sorted([7, 1, 2, 6, 0, 3, 2]); list(reversed(range(10)))
 ```
 
 #### 字典（dict）
@@ -546,21 +508,16 @@ d1 = {'a': 'some value', 'b': [1, 2, 3, 4]}
 d1[7] = 'an integer'              # 插入/更新
 'b' in d1                         # True（哈希查找，较快）
 del d1['b']                       # 删除键
-ret = d1.pop('dummy')             # 删除并返回
-list(d1.keys()); list(d1.values())
+ret = d1.pop(7)                   # 删除并返回
 d1.update({'b': 'foo', 'c': 12})  # 合并另一个字典
-
-# 取值时提供默认值：get / setdefault
-value = some_dict.get(key, default_value)   # 键不存在时返回默认值
-by_letter.setdefault(letter, []).append(word)
+d1.get(key, default_value)        # 键不存在时返回默认值
 
 # collections.defaultdict：键不存在时自动创建默认值
 from collections import defaultdict
 by_letter = defaultdict(list)
 by_letter[word[0]].append(word)
 
-# 由两个序列创建字典
-mapping = dict(zip(range(5), reversed(range(5))))
+mapping = dict(zip(range(5), reversed(range(5))))   # 由两个序列创建字典
 ```
 
 > 字典的键必须可哈希：整数、浮点数、字符串、元组（内容不可变）。列表不可哈希，但 `tuple([1, 2, 3])` 可以。
@@ -570,13 +527,12 @@ mapping = dict(zip(range(5), reversed(range(5))))
 集合适用于去重、交集、并集、差集等集合运算及成员检查：
 
 ```python
-a = {1, 2, 3, 4, 5}
-b = {3, 4, 5, 6, 7, 8}
-a.union(b)             # 并集（a | b）
-a.intersection(b)      # 交集（a & b）
-a.difference(b)        # 差集（a - b）
+a = {1, 2, 3, 4, 5}; b = {3, 4, 5, 6, 7, 8}
+a.union(b)                 # 并集（a | b）
+a.intersection(b)          # 交集（a & b）
+a.difference(b)            # 差集（a - b）
 a.symmetric_difference(b)  # 对称差（a ^ b）
-{1, 2, 3}.issubset(a)  # 子集判断
+{1, 2, 3}.issubset(a)      # 子集判断
 ```
 
 ### 推导式（Comprehension）
@@ -586,19 +542,10 @@ a.symmetric_difference(b)  # 对称差（a ^ b）
 ```python
 strings = ['a', 'as', 'bat', 'car', 'dove', 'python']
 
-# 列表推导式：过滤长度大于 2 的并转大写
-[x.upper() for x in strings if len(x) > 2]
-# ['BAT', 'CAR', 'DOVE', 'PYTHON']
-
-# 集合推导式：自动去重
-{len(x) for x in strings}          # {1, 2, 3, 4, 6}
-
-# 字典推导式
-loc_mapping = {val: index for index, val in enumerate(strings)}
-
-# 嵌套推导式：for 的书写顺序与嵌套 for 循环一致（先外后内）
-flattened = [x for tup in some_tuples for x in tup]   # 扁平化
-result = [name for names in all_data for name in names if name.count('e') >= 2]
+[x.upper() for x in strings if len(x) > 2]   # 列表推导式: ['BAT', 'CAR', 'DOVE', 'PYTHON']
+{len(x) for x in strings}                    # 集合推导式（自动去重）: {1, 2, 3, 4, 6}
+loc_mapping = {val: index for index, val in enumerate(strings)}   # 字典推导式
+flattened = [x for tup in some_tuples for x in tup]   # 嵌套推导式：for 顺序与嵌套 for 循环一致（先外后内）
 ```
 
 > 以推导式替代显式 for 循环，代码更短且通常更快（底层有优化）。嵌套超过两层时应考虑可读性。
@@ -687,16 +634,15 @@ def attempt_float(x):
     except (TypeError, ValueError):   # 捕获多种异常
         return x
 
-# 结构：try -> except（捕获）-> else（仅成功时执行）-> finally（无论成败均执行）
-f = open(path, 'w')
+# 完整结构：try -> except（捕获）-> else（仅成功时执行）-> finally（无论成败均执行）
 try:
-    write_to_file(f)
-except:
+    risky_operation()
+except ValueError:
     print('Failed')
 else:
     print('Succeeded')
 finally:
-    f.close()          # 资源清理置于此处
+    cleanup()          # 资源清理置于此处
 ```
 
 > 应只捕获预期会发生的异常类型（如 `ValueError`），使真正的错误（如 `TypeError`）能够暴露出来，而不被忽略。
@@ -707,17 +653,15 @@ finally:
 
 ```python
 path = 'examples/segismundo.txt'
-with open(path) as f:                 # with 自动关闭文件（推荐）
-    lines = [x.rstrip() for x in f]   # 逐行读取，rstrip 去掉换行符
+with open(path, encoding='utf-8') as f:   # with 自动关闭文件（推荐）
+    lines = [x.rstrip() for x in f]       # 逐行读取，rstrip 去掉换行符
 
-# 文件模式：'r' 读、'w' 写（覆盖）、'x' 创建（已存在则失败）、'b' 二进制、'a' 追加
-f = open(path, 'rb')
-data = f.read(10)          # 读取指定字节数
-f.tell()                   # 当前文件位置
-f.seek(3)                  # 移动位置
-f.close()
+# 二进制模式（'rb'）：read(n) 按字节读，tell/seek 按字节定位
+with open(path, 'rb') as f:
+    data = f.read(10)
+    f.seek(3)
 
-# 写入
+# 写入：'w' 覆盖、'a' 追加、'x' 新建（已存在则报错）
 with open('tmp.txt', 'w', encoding='utf-8') as handle:
     handle.writelines(x for x in open(path) if 'foo' in x)
 ```
@@ -743,13 +687,13 @@ with open('tmp.txt', 'w', encoding='utf-8') as handle:
 | 批量运算 | 需编写 for 循环 | 矢量化，一次操作整个数组 |
 | 与底层语言交互 | 需逐元素转换 | 直接暴露内存块，零拷贝 |
 
-实测对比（作者机器，仅作量级参考）：对一百万元素乘以 2，NumPy 约 72ms，纯 Python 列表推导约 1.05s，相差约 15 倍，且 NumPy 内存占用更小。数据量越大，差距越明显。以数组运算替代循环的做法称为矢量化（vectorization），是 NumPy 与 pandas 性能优势的基础。
+以数组运算替代循环的做法称为矢量化（vectorization），是 NumPy 与 pandas 性能优势的基础。
 
 此外，NumPy 数组是生态中各库之间传递数据的标准容器，pandas、scikit-learn、statsmodels 内部均以 ndarray 为数据载体。
 
 ### ndarray：多维数组对象
 
-ndarray（N-dimensional array）是同质数据的多维容器，所有元素必须为相同类型。每个数组有两个关键属性：
+ndarray（N-dimensional array）是同质数据的多维容器，所有元素必须为相同类型。每个数组有两个重要属性：
 
 - **shape**：各维度大小的元组，如 `(2, 3)` 表示 2 行 3 列；
 - **dtype**：元素数据类型（决定每个元素占用的字节数及内存的解释方式）。
@@ -805,6 +749,7 @@ arr * arr          # 元素级相乘（非矩阵乘法）
 arr - arr
 1 / arr            # 标量广播到每个元素
 arr ** 0.5
+arr2 = np.array([[0., 4., 1.], [7., 2., 12.]])   # 定义同形状数组
 arr2 > arr         # 比较运算生成布尔数组
 ```
 
@@ -961,7 +906,7 @@ large_arr.sort()
 large_arr[int(0.05 * len(large_arr))]   # 5% 分位数（先排序再取位置）
 
 np.unique(names)         # 唯一值（返回已排序结果）
-np.in1d(values, [2, 3, 6])   # 成员资格测试（布尔数组）
+np.isin(values, [2, 3, 6])   # 成员资格测试（布尔数组）
 ```
 
 #### 线性代数
@@ -996,7 +941,7 @@ np.savez_compressed('archive.npz', a=arr)  # 压缩保存
 
 ### 伪随机数生成
 
-`numpy.random` 提供高效生成各种概率分布样本的函数，性能优于 Python 内置 `random`（作者机器上生成 100 万样本约 62ms，对比 1.77s）。
+`numpy.random` 提供高效生成各种概率分布样本的函数，性能优于 Python 内置 `random`。
 
 NumPy 1.17+ 推荐使用 `default_rng()` 接口：它返回独立的生成器对象，避免全局状态污染，且随机序列质量更好。原书使用的 `np.random.seed` + 全局函数方式属于遗留接口，新代码应统一使用生成器对象：
 
@@ -1020,7 +965,7 @@ rng.standard_normal(size=1000)       # 标准正态分布
 
 问题设定：从 0 出发，每一步以等概率取 ±1，模拟 1000 步；再模拟 5000 次并求统计量。
 
-关键思路：随机漫步的路径是步长序列的累计和，因此可通过"生成步长数组 → cumsum"两步矢量化完成，无需循环：
+思路：随机漫步的路径是步长序列的累计和，因此可通过"生成步长数组 → cumsum"两步矢量化完成，无需循环：
 
 ```python
 nsteps = 1000
@@ -1042,9 +987,9 @@ steps = np.where(draws > 0, 1, -1)
 walks = steps.cumsum(1)                       # 沿轴 1 累计
 
 hits30 = (np.abs(walks) >= 30).any(1)         # 哪些路径穿越了 ±30
-hits30.sum()                                  # 3410 条（seed=42 下的示例输出）
+hits30.sum()                                  # 3390 条（seed=42 下的输出）
 crossing_times = (np.abs(walks[hits30]) >= 30).argmax(1)
-crossing_times.mean()                         # 平均穿越时间约 498.9 步（示例输出）
+crossing_times.mean()                         # 平均穿越时间约 506.4 步（数值随随机种子变化）
 ```
 
 **本章小结**：NumPy 的核心为连续内存、同质 dtype 与矢量化运算；索引需区分视图与副本；布尔与花式索引实现过滤与重排；ufunc 提供元素级函数库；`axis` 控制聚合方向；随机数使用 `default_rng()`。
@@ -1064,7 +1009,7 @@ pandas 由 Wes McKinney 于 2008 年在量化投资公司 AQR 开发（名称源
 - 集成时间序列功能；
 - SQL 风格的关系操作（合并、连接）。
 
-上述需求的核心可概括为：pandas 使"标签"成为数据结构的组成部分。NumPy 数组以整数位置索引，pandas 则为每个数据点提供名称（索引），并在运算时自动按名称对齐。这是 pandas 与 NumPy、Excel 的本质区别，也是理解 pandas 的关键。
+上述需求的核心可概括为：pandas 使"标签"成为数据结构的组成部分。NumPy 数组以整数位置索引，pandas 则为每个数据点提供名称（索引），并在运算时自动按名称对齐。这是 pandas 与 NumPy、Excel 的本质区别。
 
 ### Series：一维带标签数组
 
@@ -1173,7 +1118,7 @@ frame2['eastern'] = frame2.state == 'Ohio'   # 布尔列
 del frame2['eastern']            # 删除列
 ```
 
-> 关于"视图"：pandas 3.0（写时复制 CoW 默认开启）下，`frame2['col']` 返回的 Series 与原表共享底层数据，但任何就地修改都会先触发复制，**不会**再反向影响原 DataFrame；要修改原表的列，应直接使用 `frame2.loc[行, 'col'] = 值` 赋值。旧版本（CoW 关闭）中修改取出的列会传导到原表，这正是链式赋值 `df['col'][行] = 值` 的经典陷阱（3.0 起链式赋值会直接报错）。需要独立副本时使用 `.copy()`。
+> 关于"视图"：pandas 3.0（写时复制 CoW 默认开启）下，`frame2['col']` 返回的 Series 与原表共享底层数据，但任何就地修改都会先触发复制，**不会**再反向影响原 DataFrame；要修改原表的列，应直接使用 `frame2.loc[行, 'col'] = 值` 赋值。旧版本（CoW 关闭）中修改取出的列会传导到原表，这正是链式赋值 `df['col'][行] = 值` 的经典陷阱；在 3.0 默认开启 CoW 后，链式赋值不会再影响原 DataFrame（通常会给出 `SettingWithCopyWarning` 提示），仅在不启用 CoW 的旧模式下才可能抛出 `ChainedAssignmentError`。需要独立副本时使用 `.copy()`。
 
 #### values 与转置
 
@@ -1194,7 +1139,7 @@ index[1:]                 # Index(['b', 'c'])
 dup_labels = pd.Index(['foo', 'foo', 'bar', 'bar'])   # 允许重复
 ```
 
-Index 的常用属性与方法：`is_unique`、`is_monotonic_increasing`、`name`、`union`、`intersection`、`difference`。注意：`Index.append` 已在 pandas 2.0 弃用，合并索引应使用 `union` 或 `pd.concat`。
+Index 的常用属性与方法：`is_unique`、`is_monotonic_increasing`、`name`、`union`、`intersection`、`difference`。注意：合并索引官方推荐使用 `union` 或 `pd.concat`（`Index.append` 虽在 3.0 仍可用，但已不推荐）。
 
 ### 基本操作：重索引、丢弃、选取
 
@@ -1220,8 +1165,9 @@ data = pd.DataFrame(np.arange(16).reshape((4, 4)),
                     columns=['one', 'two', 'three', 'four'])
 data.drop(['Colorado', 'Ohio'])               # DataFrame 丢弃行
 data.drop('two', axis=1)       # 丢弃列（axis=1 或 axis='columns'）
-# 旧版常以 inplace=True 就地修改：该方法返回 None 且易与链式赋值混淆，现已不推荐
 ```
+
+> 历史说明：旧版常以 `inplace=True` 就地修改，但该方法返回 `None` 且易与链式赋值混淆，现已不推荐；需要就地修改时直接重新赋值（如 `df = df.drop('two', axis=1)`）。
 
 #### 选取：[] / loc / iloc
 
@@ -1287,7 +1233,7 @@ frame.apply(f, axis='columns')          # 每行计算
 frame.apply(lambda x: pd.Series([x.min(), x.max()], index=['min', 'max']))
 
 fmt = lambda x: '%.2f' % x
-frame.map(fmt)                          # DataFrame 元素级（applymap 已在 3.0 移除）
+frame.map(fmt)                          # DataFrame 元素级映射
 frame['e'].map(fmt)                     # Series 元素级
 ```
 
@@ -1297,7 +1243,7 @@ frame['e'].map(fmt)                     # Series 元素级
 obj.sort_index()                     # 按索引排序
 frame.sort_index(axis=1, ascending=False)   # 按列索引降序
 obj.sort_values()                    # 按值排序（缺失值默认在末尾）
-frame.sort_values(by=['a', 'b'])     # 按一列或多列的值排序
+frame.sort_values(by='b')            # 按一列或多列的值排序（frame 列名为 b/d/e）
 obj.rank()                           # 排名（默认并列取平均名次）
 obj.rank(method='first')             # 按出现顺序给名次
 obj.rank(ascending=False, method='max')
@@ -1376,7 +1322,7 @@ df = pd.read_csv('examples/ex1.csv')           # 首行自动作为列名
 pd.read_csv('examples/ex1.csv', sep=';')       # 自定义分隔符
 pd.read_csv('examples/ex2.csv', header=None)   # 无标题行：自动分配 0,1,2...
 pd.read_csv('examples/ex2.csv', names=['a', 'b', 'c', 'd', 'message'])  # 自定义列名
-pd.read_csv('examples/ex2.csv', names=names, index_col='message')        # 指定索引列
+pd.read_csv('examples/ex2.csv', names=['a', 'b', 'c', 'd', 'message'], index_col='message')  # 指定索引列
 pd.read_csv('examples/csv_mindex.csv', index_col=['key1', 'key2'])       # 多列层次化索引
 ```
 
@@ -1580,14 +1526,14 @@ pd.read_sql('select * from test', db)
 
 ### 数据清洗的重要性
 
-数据流水线中，清洗与规整通常占分析师 80% 的时间。原因在于生产环境的数据较少直接可用，常见问题包括：
+数据流水线中，清洗与规整往往占据分析师绝大部分工作时间。原因在于生产环境的数据较少直接可用，常见问题包括：
 
 - 缺失（问卷未填写、传感器故障、字段废弃）；
 - 重复（重复录入、多源合并）；
 - 格式混乱（大小写、空格、拼写变体、编码问题）；
 - 异常值（录入错误、极端事件）。
 
-pandas 与 Python 标准库提供了相应的数据整形工具。本章目标是使数据达到可供分析的整洁状态。
+pandas 与 Python 标准库提供了相应的数据规整工具。本章目标是使数据达到可供分析的整洁状态。
 
 ### 处理缺失数据
 
@@ -1632,7 +1578,7 @@ df.fillna({1: 0.5, 2: 0})           # 按列字典填充
 df.ffill()                          # 前向填充（使用上一个有效值；fillna(method=...) 已弃用）
 df.ffill(limit=2)                   # 限制连续填充次数
 data.fillna(data.mean())            # 用均值/中位数填充（分组填充见"数据聚合与分组运算"一章）
-# 需要就地修改时直接重新赋值：df = df.fillna(0)（inplace 参数已不推荐）
+# 需要就地修改时直接重新赋值：df = df.fillna(0)
 ```
 
 > 填充策略需结合业务判断：时间序列多用前向/后向填充；调查数据常用均值/中位数；建模场景常用中位数（对异常值稳健）。不存在普遍适用的方案。
@@ -1687,12 +1633,12 @@ bins = [18, 25, 35, 60, 100]
 cats = pd.cut(ages, bins)              # 按给定边界切分
 cats.codes                             # 各值所在面元编码（0,1,2,3）
 cats.categories                        # 面元边界（区间对象）
-cats.value_counts()                  # 各面元计数（新版写法；顶层 pd.value_counts 已不推荐）
+cats.value_counts()                  # 各面元计数（新版写法；顶层 pd.value_counts 已移除）
 
 pd.cut(ages, bins, labels=['Youth', 'YoungAdult', 'MiddleAged', 'Senior'])  # 命名
-pd.cut(data, 4, precision=2)           # 传数量：按数值范围切等长面元
-pd.qcut(data, 4)                       # 按分位数切：每个面元样本数相等
-pd.qcut(data, [0, 0.1, 0.5, 0.9, 1.])  # 自定义分位数
+pd.cut(ages, 4, precision=2)         # 传数量：按数值范围切等长面元
+pd.qcut(ages, 4)                     # 按分位数切：每个面元样本数相等
+pd.qcut(ages, [0, 0.1, 0.5, 0.9, 1.])  # 自定义分位数
 ```
 
 > `cut` 与 `qcut` 的区别：`cut` 按值域等宽切分（各面元样本数可能差异较大）；`qcut` 按分位数切分（各面元样本数相等）。分布偏斜的数据使用 `qcut` 更为合理。
@@ -1775,7 +1721,7 @@ email_re.sub(r'Username: \1, Domain: \2, Suffix: \3', 'Contact: wesm@bright.net'
 # 'Contact: Username: wesm, Domain: bright, Suffix: net'
 ```
 
-> 正则表达式的完整内容可独立成书。日常数据分析中，掌握 `\d`、`\w`、`\s`、`+`、`*`、`?`、`[]`、`()`、`^`、`$` 等基础符号即可解决多数问题。
+> 正则表达式的详细内容可参考 [Python 官方文档 re 模块](https://docs.python.org/3/library/re.html)。日常数据分析中，掌握 `\d`、`\w`、`\s`、`+`、`*`、`?`、`[]`、`()`、`^`、`$` 等基础符号即可解决多数问题。
 
 #### pandas 的矢量化字符串方法：str 属性
 
@@ -1860,7 +1806,7 @@ pd.merge(left, right, on=['key1', 'key2'])            # 多键合并
 pd.merge(left, right, on='key1', suffixes=('_left', '_right'))  # 重名列加后缀
 ```
 
-> 多对多合并会产生笛卡尔积：左表 3 个 "b" 行与右表 2 个 "b" 行合并为 6 个 "b" 行。这是预期行为，但应注意行数会相应膨胀。
+> 多对多合并会产生笛卡尔积：左表 3 个 "b" 行与右表 1 个 "b" 行合并为 3 个 "b" 行（若两表各有多个同名键，行数会成倍膨胀）。这是预期行为，但应注意行数会相应膨胀。
 
 #### 索引上的合并
 
@@ -2139,7 +2085,7 @@ seaborn 主要图表类型：
 DataFrame ──split──▶ [组1, 组2, ...] ──apply──▶ [结果1, 结果2, ...] ──combine──▶ 结果
 ```
 
-关键认知：`groupby` 本身是惰性的——它只记录分组信息，不进行计算；直到调用聚合方法（`mean`、`sum`、`agg`、`apply` 等）才真正执行。分组键的形式灵活：列名、等长数组、字典/Series（映射）、函数（处理索引）均可。
+`groupby` 本身是惰性的——它只记录分组信息，不进行计算；直到调用聚合方法（`mean`、`sum`、`agg`、`apply` 等）才真正执行。分组键的形式灵活：列名、等长数组、字典/Series（映射）、函数（处理索引）均可。
 
 ### GroupBy 机制
 
@@ -2284,7 +2230,7 @@ pd.crosstab(data.Nationality, data.Handedness, margins=True)
 pd.crosstab([tips.time, tips.day], tips.smoker, margins=True)
 ```
 
-> 关键参数：`aggfunc` 指定聚合函数（默认 `'mean'`）、`margins` 是否添加小计、`fill_value` 空组合填充值、`dropna` 是否排除全 NA 组合。
+> 重要参数：`aggfunc` 指定聚合函数（默认 `'mean'`）、`margins` 是否添加小计、`fill_value` 空组合填充值、`dropna` 是否排除全 NA 组合。
 
 **本章小结**：groupby 为惰性操作，支持四种分组键；聚合使用 `agg`（内置方法、自定义函数、命名聚合）；`apply` 最为灵活；多维汇总使用 `pivot_table`/`crosstab`。
 
@@ -2410,23 +2356,31 @@ ts2 = ts1[2:].tz_convert('Europe/Moscow')
 result = ts1 + ts2                                # 结果索引为 UTC
 ```
 
+> **时区处理常见错误**：
+> - **naive 与 aware 混用**：naive（无时区）时间戳与 aware（有时区）时间戳直接比较或运算会报错，或被静默按本地时区解释（结果随运行机器变化）。规则：操作前把相关序列统一到同一时区（或全部转 UTC）；
+> - **对已有时区的序列再次 `tz_localize`**：`tz_localize` 只应作用于 naive 序列，对 aware 序列重复调用会得到错误结果——需要"换时区"时应改用 `tz_convert`。判断方法：`ts.dt.tz is None` 表示 naive；
+> - **存储统一用 UTC**：多来源数据各自带本地时区时，先全部 `tz_convert('UTC')` 再入库、展示时再转换到目标时区——否则不同来源的"上午 9 点"可能指代完全不同的时刻，比较与聚合都会出错；
+> - **DST（夏令时）陷阱**：部分时区（如 `America/New_York`）在每年切换期存在"当地时间不存在"（春季拨快）或"当地时间不唯一"（秋季拨回），手动加减小时数必然出错——一律交给 pandas 的 `tz_convert` 处理；
+> - **便捷写法**：解析时可直接 `pd.to_datetime(col, utc=True)` 一步完成解析并标记为 UTC，省去"先解析再 `tz_localize`"两步。
+
 ### 时期（Period）与季度数据
 
 时期表示时间区间（一个月、一个季度、一年），适用于财务、会计数据：
 
 ```python
-p = pd.Period(2007, freq='YE-DEC')     # 年度时期（12 月结束的财年；旧代码 A-DEC 已不可用）
-p + 5                                  # 位移: Period('2012', 'YE-DEC')
-p.asfreq('ME', how='S')                # 转月初: Period('2007-01', 'ME')（how 用 'S'/'E'）
-p.asfreq('ME', how='E')                # 转月末
+p = pd.Period(2007, freq='Y-DEC')      # 年度时期（12 月结束的财年；Period 频率码不受 'E' 后缀重命名影响）
+p + 5                                  # 位移: Period('2012', 'Y-DEC')
+p.asfreq('M', how='S')                 # 转月初: Period('2007-01', 'M')（how 用 'S'/'E'）
+p.asfreq('M', how='E')                 # 转月末
 
-rng = pd.period_range('2000-01-01', '2000-06-30', freq='ME')
-pd.PeriodIndex(values, freq='QE-DEC')  # 季度时期
+rng = pd.period_range('2000-01-01', '2000-06-30', freq='M')
+pd.PeriodIndex(['2000Q1', '2000Q2'], freq='Q-DEC')   # 季度时期（字符串列表构造）
 
 # 时间戳与时期互转
 ts.to_period()                         # Timestamp -> Period
 pts.to_timestamp(how='end')            # Period -> Timestamp
-pd.PeriodIndex(year=data.year, quarter=data.quarter, freq='QE-DEC')  # 从列构建
+# 从年/季度列构建：3.0 起 PeriodIndex 不再接受 year=/quarter= 关键字，
+# 可先将两列拼接为 'YYYYQn' 字符串列表再构造
 ```
 
 ### 重采样：频率转换
@@ -2454,7 +2408,7 @@ annual_frame.resample('YE').mean()     # 年度聚合（新版代码）
 annual_frame.resample('QE').ffill()    # 升采样目标频率须比源频率更细
 ```
 
-> 降采样三要素：聚合函数（mean/sum/ohlc 等）、边界闭合（closed）、标签位置（label）。默认右闭、以右边界标记，这是金融 OHLC 数据的标准设定。
+> 降采样三要素：聚合函数（mean/sum/ohlc 等）、边界闭合（closed）、标签位置（label）。默认的 closed/label 依目标频率而定：`'ME'`/`'YE'`/`'QE'`/`'W'` 等低频类为右闭、以右边界标记（金融 OHLC 数据的标准设定），而 `'5min'`、`'D'` 等高频类默认为左闭、以左边界标记。
 
 ### 移动窗口函数
 
@@ -2471,8 +2425,8 @@ close_px = close_px_all[['AAPL', 'MSFT', 'XOM']]
 close_px = close_px.resample('B').ffill()   # 重采样为工作日
 
 close_px.AAPL.rolling(250).mean().plot()              # 250 日均线
-close_px.AAPL.rolling(250, min_periods=100).std()     # 最小非 NA 观测数
-appl_std250.expanding().mean()                        # 扩展窗口均值
+aapl_std250 = close_px.AAPL.rolling(250, min_periods=100).std()   # 250 日滚动标准差
+aapl_std250.expanding().mean()                                     # 扩展窗口均值
 aapl_px.ewm(span=30).mean()                           # 指数加权移动平均
 close_px.rolling('20D').mean()                        # 按时间窗口（处理不规则序列）
 
@@ -2512,8 +2466,8 @@ pd.Categorical.from_codes(codes, categories, ordered=True)   # foo < bar < baz
 
 # 内存对比
 labels = pd.Series(['foo', 'bar', 'baz', 'qux'] * 2500000, dtype=object)  # 1000 万元素（object 存储）
-labels.memory_usage()                              # 80000080 字节
-labels.astype('category').memory_usage()           # 10000272 字节（约 1/8）
+labels.memory_usage()                              # 约 8000 万字节（具体数值随 pandas 版本略有差异）
+labels.astype('category').memory_usage()           # 约 1000 万字节（约 1/8）
 ```
 
 > 注：pandas 3.0 起字符串默认使用 Arrow 存储（dtype 为 `str`），列本身已较紧凑，分类编码的实际收益取决于数据基数与重复度；上例用 `dtype=object` 复现了传统对象存储下的对比。
@@ -2612,7 +2566,7 @@ result = (df[df.col1 < 0]
             .pipe(group_demean, ['key1', 'key2'], ['col1']))
 ```
 
-> 链式编程可提升可读性，但过度链式会降低调试性（中间结果不可见）。建议：分析过程使用链式，关键步骤拆出变量进行检查。
+> 链式编程可提升可读性，但过度链式会降低调试性（中间结果不可见）。建议：分析过程使用链式，核心步骤拆出变量进行检查。
 
 **本章小结**：分类类型由类别表与整数编码构成，可节省内存、加速分组、便于建模；`transform` 执行形状不变的分组变换，`apply` 执行任意变换；`assign` 与 `pipe` 支持函数式链式编程。
 
@@ -2698,7 +2652,7 @@ print(results.summary())                     # 完整诊断（R²、F 检验、D
 # 公式接口（推荐）：自动处理列名与截距
 results = smf.ols('y ~ col0 + col1 + col2', data).fit()
 results.params; results.tvalues; results.pvalues
-results.predict(data[:5])                    # 样本外预测
+results.predict(data[:5])                    # 预测接口（此处以训练数据前 5 行演示用法；对新数据预测应传入新样本）
 ```
 
 时间序列模型（新版写法）：原书的 `sm.tsa.AR` 已废弃，使用 `AutoReg` 拟合自回归模型：
@@ -2713,75 +2667,503 @@ statsmodels 的其他模型族：`sm.GLM`（广义线性模型）、`sm.RLM`（�
 
 ### scikit-learn：机器学习标准流程
 
-scikit-learn 是通用机器学习库，统一 API 设计（`fit`/`predict`/`transform`）。以泰坦尼克号生存预测演示完整标准流程（含当前标配的 `train_test_split`）：
+scikit-learn 是 Python 通用机器学习库，其统一 API 设计贯穿所有模型（`fit`、`predict`、`transform`）。它的核心设计是：
+
+- **估计器（Estimator）**：任何可学习的对象（如 `LogisticRegression`），均提供 `fit()` 方法。
+- **转换器（Transformer）**：用于数据预处理（如 `StandardScaler`），提供 `fit_transform()` 或 `transform()`。
+- **预测器（Predictor）**：有监督模型额外提供 `predict()` 和 `predict_proba()`。
+
+在实际建模流程中，我们关注三个核心问题：如何避免数据泄漏、如何评估泛化能力、如何串联预处理与模型。
+
+#### 基础流程：训练/测试划分与交叉验证
+
+任何涉及统计量（均值、方差、分位数）的计算都只能从训练集中得出，再应用到验证/测试集，否则会造成数据泄漏（data leakage），夸大模型表现。
 
 ```python
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_auc_score
 
-# 1. 数据清洗：缺失值填充（使用训练集统计量，避免数据泄漏）
-impute_value = train['Age'].median()
-train['Age'] = train['Age'].fillna(impute_value)
-test['Age'] = test['Age'].fillna(impute_value)
+# 模拟特征与标签（实际场景中 X 为 pandas DataFrame 的 values）
+rng = np.random.default_rng(42)
+X = rng.standard_normal((1000, 5))
+y = (X[:, 0] + X[:, 1] + rng.standard_normal(1000) > 0).astype(int)
 
-# 2. 特征工程
-train['IsFemale'] = (train['Sex'] == 'female').astype(int)
-test['IsFemale'] = (test['Sex'] == 'female').astype(int)
+# 1. 划分训练集与验证集（保留一份未见数据用于最终评估）
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-# 3. 准备特征矩阵
-predictors = ['Pclass', 'IsFemale', 'Age']
-X = train[predictors].values
-y = train['Survived'].values
-
-# 4. 划分训练/验证集
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2,
-                                                  random_state=42)
-
-# 5. 拟合与评估
+# 2. 训练模型
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-accuracy_score(y_val, y_pred)                # 验证集准确率
 
-# 6. 交叉验证与参数调优
+# 3. 验证集评估
+y_pred = model.predict(X_val)
+print(f"验证集准确率: {accuracy_score(y_val, y_pred):.4f}")
+
+# AUC-ROC：与阈值无关、对类别不平衡稳健的排序评估指标（概念见本系列《从统计学习基础到核心方法》）
+print(f"验证集 AUC: {roc_auc_score(y_val, model.predict_proba(X_val)[:, 1]):.4f}")
+
+# 4. 交叉验证（更稳健的模型选择方式，无需手动划分）
 scores = cross_val_score(LogisticRegression(max_iter=1000), X, y, cv=5)
-scores.mean()
-from sklearn.linear_model import LogisticRegressionCV
-model_cv = LogisticRegressionCV(Cs=10, max_iter=1000)
-model_cv.fit(X, y)
+print(f"5折交叉验证均值: {scores.mean():.4f} (+/- {scores.std():.4f})")
 ```
 
-> `train_test_split` 的意义：在训练集上学到的任何统计量（均值、中位数）都不能用于测试集，否则属于数据泄漏，会高估模型表现。标准做法是仅在训练集上计算填充值或缩放参数，再应用于测试集。
+> `train_test_split` 的意义：任何统计量（均值、中位数、缩放参数）都只能在训练集上计算，再应用到测试集；若在测试集（或全量数据）上计算统计量再用于填充或缩放，会造成数据泄漏，高估模型表现。
 
 #### Pipeline：串联预处理与模型
 
-实际项目中特征工程包含多个步骤。`Pipeline` 将"标准化 + 模型"串联为单一估计器，避免在交叉验证中泄漏预处理参数：
+实际项目中，预处理通常包含多个步骤（标准化、降维、特征选择等）。`Pipeline` 将多个转换器与最终估计器串联为一个整体，保证交叉验证每一折都独立拟合预处理参数（如标准化时的均值和标准差），避免数据泄漏：
 
 ```python
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 pipe = Pipeline([
-    ('scaler', StandardScaler()),
-    ('clf', LogisticRegression(max_iter=1000)),
+    ('scaler', StandardScaler()),                 # 步骤1：标准化
+    ('clf', LogisticRegression(max_iter=1000))    # 步骤2：分类器
 ])
-scores = cross_val_score(pipe, X, y, cv=5)   # 每折独立拟合预处理参数
+
+# 交叉验证时，每一折的 scaler 都只用该折的训练集拟合，再转换验证集
+scores = cross_val_score(pipe, X, y, cv=5)
+print(f"Pipeline 交叉验证均值: {scores.mean():.4f}")
 ```
 
-#### 继续学习建模的推荐书籍
+`Pipeline` 的另一个好处是，一旦调优完成，可直接用 `pipe.predict(X_test)` 对新数据做完整预测，无需手动重复预处理步骤。
 
-- 《Introduction to Machine Learning with Python》（Andreas Mueller & Sarah Guido）
-- 《Python Data Science Handbook》（Jake VanderPlas）
-- 《Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow》（Aurélien Géron，第三版）
+#### 模型调优：网格搜索（GridSearchCV）
+
+超参数调优应嵌入交叉验证流程，`GridSearchCV` 或 `RandomizedSearchCV` 是标准工具：
+
+```python
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {'clf__C': [0.1, 1.0, 10.0]}   # 正则化强度的逆
+grid_search = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy')
+grid_search.fit(X_train, y_train)           # 仅在训练集上搜索
+
+print(f"最佳参数: {grid_search.best_params_}")
+print(f"最佳交叉验证分数: {grid_search.best_score_:.4f}")
+```
+
+> scikit-learn 支持数十种经典算法（随机森林、SVM、梯度提升树等），接口统一。在解决具体问题时，建议先尝试线性模型（快速、可解释），若效果不足再逐步尝试更复杂的集成模型。
 
 **本章小结**：特征工程连接数据规整与建模；Patsy 以公式定义设计矩阵；statsmodels 用于推断（p 值、置信区间），scikit-learn 用于预测（准确率、交叉验证）；`train_test_split` 与 `Pipeline` 是现代建模流程的标准组件。
 
 ---
 
-## 真实数据分析案例
+## 经典案例分析
 
-**本章目标**：将前述工具应用于五个真实数据集，体会面对陌生数据的分析流程。每个案例包含分析目标、数据形态、处理套路与结论。所有数据可在 [pydata-book 仓库](https://github.com/wesm/pydata-book) 的 datasets 目录获取。
+**本章目标**：将前文全部工具串联为一条完整的数据分析流水线；以 Kaggle 经典比赛 [Titanic: Machine Learning from Disaster](https://www.kaggle.com/competitions/titanic) 为数据，完整走通"加载 → 清洗 → 特征工程 → 探索分析 → 建模评估 → 预测提交"的标准流程；理解每一步在真实问题中的意义。
+
+### 案例背景与数据形态
+
+泰坦尼克号于 1912 年首航即沉没，船上乘客与船员大多未能生还。比赛要求依据乘客的个人信息预测其是否幸存，评价指标为准确率（accuracy）。数据提供如下：
+
+- `train.csv`：训练集，891 行 × 12 列，含标签列 `Survived`（1 幸存 / 0 遇难）；
+- `test.csv`：测试集，418 行 × 11 列，不含标签——这正是真实场景的常态：需要预测的样本没有答案；
+- `gender_submission.csv`：官方示例提交，418 行 × 2 列，内容是"女性幸存、男性遇难"这一启发式规则，用于说明提交格式（`PassengerId,Survived`）。
+
+12 个字段的含义如下：
+
+| 字段 | 类型 | 含义 |
+|---|---|---|
+| `PassengerId` | int | 乘客编号，仅作行标识，无预测意义 |
+| `Survived` | int | 是否幸存（0 遇难 / 1 幸存），仅训练集含有 |
+| `Pclass` | int | 舱位等级（1/2/3），1 为头等舱 |
+| `Name` | str | 姓名，含称谓（Mr/Mrs/Miss/Master 等） |
+| `Sex` | str | 性别（male / female） |
+| `Age` | float | 年龄，训练集缺失 177 条 |
+| `SibSp` | int | 同船兄弟姐妹/配偶人数 |
+| `Parch` | int | 同船父母/子女人数 |
+| `Ticket` | str | 船票号 |
+| `Fare` | float | 票价 |
+| `Cabin` | str | 舱位号，缺失比例高达 77% |
+| `Embarked` | str | 登船港口（C = Cherbourg / Q = Queenstown / S = Southampton） |
+
+### 数据加载与初步观察
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+train = pd.read_csv('train.csv')
+test = pd.read_csv('test.csv')
+gender_submission = pd.read_csv('gender_submission.csv')
+
+train.shape          # (891, 12)
+test.shape           # (418, 11)
+```
+
+`head()` 展示前 5 行原始数据：
+
+```
+   PassengerId  Survived  Pclass                                                 Name     Sex   Age  SibSp  Parch            Ticket     Fare Cabin Embarked
+0            1         0       3                              Braund, Mr. Owen Harris    male  22.0      1      0         A/5 21171   7.2500   NaN        S
+1            2         1       1  Cumings, Mrs. John Bradley (Florence Briggs Thayer)  female  38.0      1      0          PC 17599  71.2833   C85        C
+2            3         1       3                               Heikkinen, Miss. Laina  female  26.0      0      0  STON/O2. 3101282   7.9250   NaN        S
+3            4         1       1         Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  35.0      1      0            113803  53.1000  C123        S
+4            5         0       3                             Allen, Mr. William Henry    male  35.0      0      0            373450   8.0500   NaN        S
+```
+
+`info()` 直接给出每列的非空计数与类型，缺失情况一目了然：
+
+```
+<class 'pandas.DataFrame'>
+RangeIndex: 891 entries, 0 to 890
+Data columns (total 12 columns):
+ #   Column       Non-Null Count  Dtype
+---  ------       --------------  -----
+ 0   PassengerId  891 non-null    int64
+ 1   Survived     891 non-null    int64
+ 2   Pclass       891 non-null    int64
+ 3   Name         891 non-null    str
+ 4   Sex          891 non-null    str
+ 5   Age          714 non-null    float64
+ 6   SibSp        891 non-null    int64
+ 7   Parch        891 non-null    int64
+ 8   Ticket       891 non-null    str
+ 9   Fare         891 non-null    float64
+ 10  Cabin        204 non-null    str
+ 11  Embarked     889 non-null    str
+dtypes: float64(2), int64(5), str(5)
+```
+
+数值列的描述统计（节选 Age、SibSp、Parch、Fare）：
+
+```
+              Age       SibSp       Parch        Fare
+count  714.000000  891.000000  891.000000  891.000000
+mean    29.699118    0.523008    0.381594   32.204208
+std     14.526497    1.102743    0.806057   49.693429
+min      0.420000    0.000000    0.000000    0.000000
+25%     20.125000    0.000000    0.000000    7.910400
+50%     28.000000    0.000000    0.000000   14.454200
+75%     38.000000    1.000000    0.000000   31.000000
+max     80.000000    8.000000    6.000000  512.329200
+```
+
+票价 `Fare` 均值 32.2、中位数 14.45，最大值高达 512.3——右偏分布明显，个别头等舱乘客的票价远超常人；`Age` 中位数 28，最大 80，最小仅 0.42 岁（婴儿）。`Age` 只有 714 条非空（缺失 177），`Cabin` 仅 204 条非空，`Embarked` 缺 2 条——下一节专门处理缺失。注意 test 比 train 少 `Survived` 列，其余列一致。
+
+### 缺失值检查与数据清洗
+
+```python
+train.isna().sum()
+# PassengerId      0
+# Survived         0
+# ...
+# Age            177
+# Cabin          687
+# Embarked         2
+
+test.isna().sum()
+# Age     86
+# Cabin  327
+# Fare     1
+```
+
+三个缺失来源，处理方式各不相同：
+
+- **Embarked（2 条）**：类别特征，缺失量极小，用众数 `S` 填充即可；
+- **Age（177 条，约 20%）**：直接丢弃会损失约五分之一的样本。本例将其保留为缺失值，交由建模阶段的 `SimpleImputer` 在交叉验证每一折的训练集上拟合中位数；
+- **Cabin（687 条，约 77%）**：缺失比例过高，不适合做填充，但"是否有舱位号"本身可能携带信息（有舱位号者多为头等舱乘客），故转为二元特征 `HasCabin`。
+
+```python
+embarked_mode = train['Embarked'].mode()[0]      # 'S'
+train['Embarked'] = train['Embarked'].fillna(embarked_mode)
+```
+
+> test 集中的 1 条 `Fare` 缺失与 86 条 `Age` 缺失同样保留，交由建模阶段的 `SimpleImputer` 处理——清洗阶段只处理"可以直接修复"的缺失，涉及统计量的填充一律放到管道中按折进行。
+
+### 特征工程
+
+特征工程的目标是从原始字段中构造对建模有用的新变量。本例做四件事：从姓名提取称谓、构造家庭规模、转换舱位缺失、类别列哑变量化。
+
+```python
+# Age、Fare 缺失刻意保留，交由建模阶段 SimpleImputer 按折填充（防泄漏）
+def engineer_features(df):
+    feats = df.copy()                      # 显式 .copy() 获得独立副本
+
+    # 1) 称谓：正则从姓名中提取（"Braund, Mr. Owen Harris" -> Mr）
+    raw_title = feats['Name'].str.extract(r' ([A-Za-z]+)\.', expand=False)
+    title_dict = {'Mr': 'Mr', 'Mrs': 'Mrs', 'Miss': 'Miss', 'Master': 'Master',
+                  'Mlle': 'Miss', 'Ms': 'Miss', 'Mme': 'Mrs'}   # 法语称谓归并
+    feats['Title'] = raw_title.map(title_dict).fillna('Rare')
+
+    # 2) 家庭规模与是否独行
+    feats['FamilySize'] = feats['SibSp'] + feats['Parch'] + 1   # +1 为本人
+    feats['IsAlone'] = (feats['FamilySize'] == 1).astype(int)
+
+    # 3) 是否有舱位号
+    feats['HasCabin'] = feats['Cabin'].notna().astype(int)
+
+    # 4) 类别列 -> 哑变量（drop_first 去掉一列以避免共线性）
+    feats = pd.get_dummies(feats, columns=['Sex', 'Embarked', 'Title'],
+                           drop_first=True)
+    return feats.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin',
+                               'SibSp', 'Parch'])
+
+train_feats = engineer_features(train)
+test_feats = engineer_features(test).reindex(
+    columns=[c for c in train_feats.columns if c != 'Survived'], fill_value=0)
+```
+
+称谓在训练集中归并后的分布为 Mr 517、Miss 185、Mrs 126、Master 40，其余 Dr、Rev 等稀有称谓共 23 条归并为 `Rare`：
+
+```python
+train_feats.filter(like='Title_').sum().astype(int)
+# Title_Miss    185
+# Title_Mr      517
+# Title_Mrs     126
+# Title_Rare     23
+```
+
+其中 `Master` 是未成年男孩的称谓，`Miss` 兼指未婚女性与女孩，这两个称谓直接对应"妇女儿童优先"的救生规则，是后续分析的重要线索。`drop_first` 以字母序第一类（Master）为参照，故哑变量中没有 `Title_Master` 一列。
+
+> 注意 `reindex` 一步：`get_dummies` 会为每个类别生成一列，若测试集出现训练集未见的类别（如测试集中的 `Dona` 称谓），两表列数将不一致，`predict` 会报错。以训练集列对齐测试集并填充 0，是哑变量场景下的稳妥做法；工程上更规范的方式是使用 sklearn 的 `OneHotEncoder` 配合 `ColumnTransformer`。
+
+### 探索性分析：谁更容易幸存
+
+建模之前先用分组聚合回答"哪些人更容易活下来"。总体幸存率 38.4%（891 人中 342 人幸存）：
+
+```python
+train['Survived'].value_counts()
+# Survived
+# 0    549
+# 1    342
+
+train['Survived'].mean()                                  # 0.3838
+
+train.groupby('Sex')['Survived'].agg(['mean', 'count'])
+#         mean  count
+# female  0.742    314
+# male    0.189    577
+
+train.groupby('Pclass')['Survived'].agg(['mean', 'count'])
+#         mean  count
+# 1       0.630    216
+# 2       0.473    184
+# 3       0.242    491
+
+train.groupby('Embarked')['Survived'].agg(['mean', 'count'])
+#           mean  count
+# C       0.554    168
+# Q       0.390     77
+# S       0.339    646
+```
+
+规律非常清晰：
+
+- **性别**：女性幸存率 74.2%，男性仅 18.9%；
+- **舱位**：头等舱 63.0%、二等舱 47.3%、三等舱 24.2%——沉没时救生艇优先供给高舱位乘客；
+- **登船港口**：C（瑟堡）港 55.4% 明显高于 S 港 33.9%——港口本身不决定生死，而是与舱位结构相关：瑟堡登船者中头等舱占 50.6%（南安普顿仅 19.7%），这就是分析中常遇到的"混淆变量"；
+- **年龄**：儿童（≤15 岁）幸存率 59.0%，远高于成年人各段（33%–42%）；177 条缺失年龄按中位数填充后统计，仅作观察。
+
+年龄分布用直方图观察最直观，但分箱聚合同样能呈现规律，还顺带演示了 `pd.cut` 的用法：
+
+```python
+eda = train.copy()
+eda['Age'] = eda['Age'].fillna(eda['Age'].median())
+eda.assign(AgeBand=pd.cut(eda['Age'], bins=[0, 15, 30, 50, 80])) \
+   .groupby('AgeBand')['Survived'].agg(['mean', 'count'])
+# AgeBand          mean  count
+# (0, 15]       0.5904     83
+# (15, 30]      0.3360    503
+# (30, 50]      0.4232    241
+# (50, 80]      0.3438     64
+```
+
+儿童段幸存率最高；15–30 岁段最低（33.6%）且人数最多（503 人），部分原因是缺失年龄按中位数 28 填充后落入此段。
+
+> 探索分析中直接用全量中位数填充年龄，与建模阶段的处理并不矛盾：探索是描述性的，目的只是观察年龄与幸存的关系，用全量统计量不影响结论；而建模评估要用未见数据衡量泛化能力，填充统计量一旦来自全量数据（含验证折），就会把验证集信息泄漏进训练过程、高估交叉验证分数。所以探索阶段怎么方便怎么来，建模阶段严格交给管道按折填充（见"缺失值检查与数据清洗"一节）。
+
+交叉表与透视表可以同时观察两个变量：
+
+```python
+pd.crosstab(train['Embarked'], train['Survived'])
+# Survived    0    1
+# Embarked
+# C          75   93
+# Q          47   30
+# S         427  219
+
+train.pivot_table('Survived', index='Pclass', columns='Sex', aggfunc='mean')
+# Sex      female      male
+# Pclass
+# 1       0.968085  0.368852
+# 2       0.921053  0.157407
+# 3       0.500000  0.135447
+```
+
+头等舱女性幸存率高达 96.8%，三等舱男性仅 13.5%——两个变量叠加后区分度极大。
+
+家庭规模与相关性：
+
+```python
+train.assign(FamilySize=train['SibSp'] + train['Parch'] + 1) \
+     .groupby('FamilySize')['Survived'].agg(['mean', 'count'])
+#                 mean  count
+# FamilySize
+# 1           0.303538    537
+# 2           0.552795    161
+# 3           0.578431    102
+# 4           0.724138     29
+# 5           0.200000     15
+# 6           0.136364     22
+# 7           0.333333     12
+# 8           0.000000      6
+# 11          0.000000      7
+
+train_feats.corr()['Survived'].sort_values().round(3)
+# Title_Mr     -0.549
+# Sex_male     -0.543
+# Pclass       -0.338
+# IsAlone      -0.203
+# Embarked_S   -0.150
+# Age          -0.077
+# Title_Rare   -0.012
+# Embarked_Q    0.004
+# FamilySize    0.017
+# Fare          0.257
+# HasCabin      0.317
+# Title_Miss    0.336
+# Title_Mrs     0.342
+```
+
+- **家庭规模**：2–4 人的小家庭幸存率最高（55%–72%），独行者仅 30.4%，8 人及以上的大家庭（6 户与 7 户）无人幸存——样本虽小，但与大家庭难以集体撤离的记载一致；
+- **相关系数**：与标签相关最强的是 `Title_Mr`（-0.549）与 `Sex_male`（-0.543）——"成年男性"几乎等于"遇难"；`Fare`（0.257）、`HasCabin`（0.317）与女性称谓为正相关，与舱位等级同源。
+
+数字之外，图表能把结论呈现得更直观。以最核心的性别差异为例：
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+sns.countplot(x='Sex', hue='Survived', data=train, ax=axes[0])   # 计数
+sns.barplot(x='Sex', y='Survived', data=train, ax=axes[1])       # 幸存率
+plt.show()
+```
+
+![图 1：性别与幸存情况（左：人数对比，右：幸存率）](/img/blog7.1.webp)
+
+左图可见男性人数约为女性的两倍，右图却显示幸存者中女性占绝对多数——"妇女儿童优先"的救生规则在数据中一览无余。舱位、年龄、登船港口与家庭规模的图形化结论与上文表格完全一致，此处不再逐一重复贴图。
+
+### 建模与评估
+
+特征矩阵为 891 × 13（`Survived` 之外的全部特征）。先建立参照系：`gender_submission.csv` 的启发式基线，再评估两个模型。
+
+```python
+X = train_feats.drop(columns=['Survived'])
+y = train['Survived']
+
+# 基线：性别启发式（确定性规则，无需拟合；全量准确率与 5 折均值相同）
+accuracy_score(y, (train['Sex'] == 'female').astype(int))   # 0.7868
+
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+
+# 逻辑回归：中位数填充 -> 标准化 -> 分类器（Pipeline 保证每折独立拟合填充器）
+lr_pipe = Pipeline([
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler()),
+    ('clf', LogisticRegression(max_iter=1000, random_state=42)),
+])
+lr_pipe.fit(X_train, y_train)
+accuracy_score(y_val, lr_pipe.predict(X_val))               # 0.8268
+cross_val_score(lr_pipe, X, y, cv=5).mean()                 # 0.8260
+
+# 随机森林对照（树模型对特征尺度不敏感，无需标准化）
+rf_pipe = Pipeline([('imputer', SimpleImputer(strategy='median')),
+                    ('clf', RandomForestClassifier(n_estimators=200,
+                                                   random_state=42))])
+cross_val_score(rf_pipe, X, y, cv=5).mean()                 # 0.8036
+
+# 网格搜索调参（仅在训练集上搜索，验证集只用于最终评估）
+grid_search = GridSearchCV(lr_pipe, {'clf__C': [0.01, 0.1, 1.0, 10.0]},
+                           cv=5, scoring='accuracy')
+grid_search.fit(X_train, y_train)
+grid_search.best_params_        # {'clf__C': 0.1}
+grid_search.best_score_         # 0.8231
+```
+
+网格搜索的完整结果如下——`C` 是正则化强度的倒数，`C` 越小正则化越强：
+
+```
+ param_clf__C  mean_test_score  std_test_score
+         0.01           0.8090          0.0248
+         0.10           0.8231          0.0190
+         1.00           0.8189          0.0163
+        10.00           0.8217          0.0181
+```
+
+各模型成绩汇总：
+
+| 模型 | 验证集准确率 | 5 折交叉验证 |
+|---|---|---|
+| 性别启发式基线（gender_submission 规则） | — | 0.7868 ± 0.0188 |
+| 逻辑回归（C=0.1） | 0.8268 | 0.8260 ± 0.0244 |
+| 随机森林（200 棵树） | 0.7989 | 0.8036 ± 0.0349 |
+
+基线是确定性规则、无需拟合，因此其 5 折交叉验证均值与全量训练集准确率相同（均为 0.7868），±0.0188 的标准差来自各折样本构成差异——表中三行统一为交叉验证口径，可直接比较。
+
+两点值得注意。其一，仅用"女性幸存"一条规则就有 78.7% 的准确率，说明该数据集信号强、类间差异大；其二，逻辑回归（交叉验证 0.8260）反而略高于随机森林（0.8036）——在特征数少、信号清晰的表格数据上，简单线性模型常常不输复杂模型，这也印证了前文"先尝试线性模型，效果不足再逐步复杂化"的建议。正则化强度以 C=0.1 最优，说明适度正则化有助于抑制噪声。
+
+随机森林的特征重要性进一步验证了探索性分析的结论：
+
+```python
+X_imp = SimpleImputer(strategy='median').fit_transform(X)
+rf_full = RandomForestClassifier(n_estimators=200, random_state=42)
+rf_full.fit(X_imp, y)
+pd.Series(rf_full.feature_importances_, index=X.columns).sort_values()
+# Fare       0.2358
+# Age        0.2281
+# Sex_male   0.1294
+# Title_Mr   0.1267
+# Pclass     0.0667
+# FamilySize 0.0660
+# ...
+```
+
+票价、年龄、性别与称谓占据绝大部分重要性——`Sex_male` 与 `Title_Mr` 本质上度量同一信息（成年男性），再次指向"性别决定生死"这一核心规律。
+
+### 预测与提交
+
+以交叉验证均值更高的调参逻辑回归作为最终模型，对测试集预测并写出提交文件：
+
+```python
+final_model = grid_search.best_estimator_
+test_pred = final_model.predict(test_feats)
+test_pred.mean()        # 0.3876
+pd.Series(test_pred).value_counts().sort_index()
+# 0    256
+# 1    162
+
+submission = pd.DataFrame({'PassengerId': test['PassengerId'],
+                           'Survived': test_pred})
+submission.to_csv('submission.csv', index=False)
+```
+
+预测幸存比例 38.8% 与训练集 38.4% 接近，说明模型对测试集没有系统性偏差。将 `submission.csv` 提交至比赛页面得分为 **0.78468**。
+
+> 若想进一步提升，可尝试的路径包括：票价/年龄分箱（`pd.cut`）、`Age` 按称谓分组填充中位数、从 `Cabin` 提取甲板字母、`FamilySize` 截断合并，以及梯度提升模型（`GradientBoosting`、`XGBoost`）与投票集成。对该数据集而言，特征工程带来的提升通常大于换用更复杂的模型，但诚实的上限大约在公开榜 0.80–0.81。
+
+**本章小结**：本章以 Titanic 数据完整演示了数据分析流水线——加载与初步观察确定数据形态；缺失值检查区分三种处理策略（众数填充、保留给管道按折填充、转二元特征）；特征工程从文本与组合字段中构造信息；分组聚合、交叉表、透视表与相关系数共同揭示"性别、舱位、家庭规模、年龄"的生存规律，并识别出登船港口背后的混淆变量；Pipeline 与交叉验证在防泄漏前提下评估模型，网格搜索选择正则化强度；最终生成与示例格式一致的提交文件，并正确解读交叉验证与榜单分数的落差。全流程中，pandas 承担了前 80% 的清洗规整工作，scikit-learn 负责建模评估——这正是两个库分工的典型写照。
+
+---
+
+## 附录A：案例补充
+
+**本章目标**：补充了覆盖常见真实场景的更多案例，将前述工具应用于五个真实数据集，体会面对陌生数据的分析流程。每个案例包含分析目标、数据形态、处理套路与结论。所有数据可在 [pydata-book 仓库](https://github.com/wesm/pydata-book) 的 datasets 目录获取。
 
 ### 案例一：Bitly 的 USA.gov 数据（JSON 日志分析）
 
@@ -3047,11 +3429,9 @@ percent = totals.div(totals.sum(1), axis=0)
 
 **结论**：Obama 在小额捐款（1–1000 美元）上的笔数明显多于 Romney，而 Romney 在大额（1000–10000 美元）上的占比更高，反映两人竞选募资策略的差异。
 
-**本章小结**：五个案例覆盖五类常见真实场景——JSON 日志、多表关系数据、多文件合并、嵌套 JSON、大规模 CSV。其共同主线是：先明确要回答的问题，再选择"加载 → 清洗 → 重塑 → 聚合 → 可视化"中的对应工具。
-
 ---
 
-## 附录：NumPy 进阶与 IPython 生产力
+## 附录B：NumPy 进阶与 IPython 生产力
 
 **本章目标**：补充正文未展开但日常常用的两块内容——NumPy 的广播机制与高级数组技巧，以及 IPython 的调试、计时与性能分析工具。
 
@@ -3148,18 +3528,17 @@ def nb_add(x, y):
 nb_add.accumulate(x, 0)
 ```
 
-> 实测数据（作者机器，仅作量级参考）：同一 `mean_distance` 函数，纯 Python 约 2s，NumPy 矢量化约 15ms，Numba 编译后约 10ms。使用 Numba 前需安装：`pip install numba`（或 `conda install numba`）。
-
 ### IPython 生产力进阶
+
+> 本节承接"交互式开发环境：IPython 与 Jupyter"一章，聚焦 IPython 的进阶用法。
 
 #### 命令历史与输入输出变量
 
+IPython shell 支持 Emacs 风格历史导航：`Ctrl-P`/`Ctrl-N`（上下翻历史）、`Ctrl-R`（反向增量搜索历史）、`Ctrl-A`（行首）、`Ctrl-E`（行尾）、`Ctrl-K`（删除至行尾）、`Ctrl-C`（中断运行中的代码）。历史查看与清理使用 `%hist`/`%reset`。每个输入/输出都会被记录，可通过下划线变量引用：
+
 ```python
-# 历史搜索：Ctrl-P / 上箭头（向后），Ctrl-N / 下箭头（向前），Ctrl-R（增量搜索）
 # 输入输出变量：_（上一次输出）、__（上上次）、_27（第 27 次输出）、_i27（第 27 次输入）
 exec(_i27)                 # 重新执行第 27 次输入
-%hist                      # 打印输入历史
-%reset                     # 清理命名空间
 ```
 
 > IPython 会保留所有输入/输出对象的引用。处理超大 DataFrame 时，即使执行 `del` 删除变量，历史引用仍占用内存，可使用 `%xdel obj` 彻底删除。

@@ -3,7 +3,7 @@ title: Linux 目录为什么是这样
 date: 2026-08-14 18:00:00
 updated: 2026-08-14 18:00:00
 categories:
-  - 穷理
+  - 拾遗
 tags:
   - Linux
   - 操作系统
