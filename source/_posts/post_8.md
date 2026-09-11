@@ -91,9 +91,185 @@ $$T=\{(x_1,y_1),(x_2,y_2),\ldots,(x_N,y_N)\}$$
 
 除上述指标外，二类分类问题的评估还应关注 **ROC 曲线与 AUC**。ROC 曲线（receiver operating characteristic curve）以假正例率（FPR，实际为负却被预测为正的比例）为横轴、真正例率（TPR，即召回率）为纵轴，刻画分类器在所有判别阈值下的性能：曲线越靠近左上角，分类器整体性能越好。**AUC（area under the curve）即 ROC 曲线下的面积**，取值在 0 到 1 之间——AUC=1 对应完全正确的分类器，AUC=0.5 对应随机猜测。与准确率相比，AUC 有两个重要性质：① 它是**与阈值无关**的整体度量，无需预先设定判别阈值；② 它对**类别不平衡**不敏感——类别比例严重失衡时准确率可能虚高（如恒预测多数类），而 AUC 仍能如实反映排序能力。因此 AUC 常用于排序类任务（如点击率预估）与样本不均衡场景的模型比较。（其工具实现，如 scikit-learn 的 `roc_auc_score`，见本系列《从Python基础到数据分析》"建模库入门"一章。）
 
+**PR 曲线与平均精度（AP）。** AUC 之外，二类分类评估还有一条同样重要的曲线：以召回率为横轴、精确率为纵轴的**精确率-召回率曲线（PR 曲线）**。它刻画的是"提高召回率要付出多少精确率的代价"，曲线下面积称为**平均精度（average precision，AP）**。
+
+**什么时候该看 PR 曲线而不是 ROC 曲线？** 关键在于两条曲线的横轴对"负例"的依赖程度：ROC 的横轴是 $FPR=FP/(FP+TN)$，分母包含数量庞大的真负例 TN，因此正例极稀少时 FPR 的微小变化会被 TN 稀释，曲线看起来依然"很漂亮"；PR 曲线的横轴是召回率、纵轴精确率，二者的分母只涉及正例与预测正例，**正例稀少时任何一次误报都会显著拉低精确率**，曲线的下降因此非常敏感。结论：**正例占比越低（如 1% 以下的欺诈、故障、罕见病），PR 曲线与 AP 越能反映模型的真实可用性**；类别相对均衡时两者结论接近，用 AUC 更方便。
+
+```python
+import numpy as np
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (roc_curve, roc_auc_score, precision_recall_curve,
+                             average_precision_score, classification_report,
+                             confusion_matrix)
+
+# 构造一个极不平衡的二类数据（正例约 2%）
+X, y = make_classification(n_samples=10000, n_features=20, n_informative=6,
+                           weights=[0.98, 0.02], flip_y=0.02, random_state=0)
+Xtr, Xte, ytr, yte = X[:6000], X[6000:], y[:6000], y[6000:]
+
+clf = LogisticRegression(max_iter=2000, class_weight='balanced').fit(Xtr, ytr)
+score = clf.predict_proba(Xte)[:, 1]          # 用概率而非硬标签评估
+
+print('正例占比      :', round(yte.mean(), 4))
+print('ROC-AUC       :', round(roc_auc_score(yte, score), 4))
+print('PR 曲线下面积 AP:', round(average_precision_score(yte, score), 4),
+      '（随机猜测的 AP ≈ 正例占比）')
+
+# 把两条曲线的横轴都取出来，直观对比"好看"的程度
+fpr, tpr, thr_roc = roc_curve(yte, score)
+prec, rec, thr_pr = precision_recall_curve(yte, score)
+print('ROC 曲线起点附近的 FPR 范围:', np.round(fpr[:5], 4))
+print('PR 曲线起点附近的精确率范围:', np.round(prec[:5], 4))
+```
+
+注意最后两行的对比：在同样的高分阈值附近，ROC 的 FPR 只是从 0 升到很小的值（看起来毫无代价），而精确率可能已经从 1.0 掉到 0.3（代价一目了然）。这正是"不平衡数据下 PR 曲线更诚实"的具体表现。
+
+**从曲线到阈值：把评估变成决策。** 上面两条曲线都是"所有阈值下"的性能，但线上系统必须选定**一个**阈值。做法是：先按业务确定约束，再在曲线上取点。
+
+```python
+def pick_threshold(y_true, score, min_recall=0.90):
+    """在满足最低召回率的前提下，取精确率最高的阈值"""
+    prec, rec, thr = precision_recall_curve(y_true, score)
+    # precision_recall_curve 返回的 prec/rec 比 thr 多一个元素（最后一个点无对应阈值）
+    ok = rec[:-1] >= min_recall
+    if not ok.any():
+        raise ValueError(f'没有任何阈值能达到召回率 {min_recall}')
+    i = np.argmax(np.where(ok, prec[:-1], -1))     # 合格点中精确率最高者
+    return float(thr[i]), float(prec[i]), float(rec[i])
+
+t, p, r = pick_threshold(yte, score, min_recall=0.90)
+print(f'选定阈值 {t:.4f} -> 精确率 {p:.3f}, 召回率 {r:.3f}')
+
+y_pred = (score >= t).astype(int)
+print('混淆矩阵:\n', confusion_matrix(yte, y_pred))
+print(classification_report(yte, y_pred, digits=3))
+```
+
+**若两类错误的代价不同**，就把代价显式写进目标函数，直接最小化期望代价，而不是在"精确率/召回率"之间凭感觉折中：
+
+$$\text{总代价}(\tau) = c_{FP}\cdot FP(\tau) + c_{FN}\cdot FN(\tau)$$
+
+```python
+def best_threshold_by_cost(y_true, score, c_fp=1.0, c_fn=10.0):
+    """按代价矩阵选阈值：漏检（FN）代价是误报（FP）的 10 倍"""
+    thr_grid = np.unique(np.round(score, 4))
+    costs = []
+    for t in thr_grid:
+        pred = score >= t
+        fp = np.sum(pred & (y_true == 0))
+        fn = np.sum(~pred & (y_true == 1))
+        costs.append(c_fp * fp + c_fn * fn)
+    i = int(np.argmin(costs))
+    return float(thr_grid[i]), float(costs[i])
+
+t_cost, total = best_threshold_by_cost(yte, score, c_fp=1.0, c_fn=10.0)
+print(f'代价最优阈值 {t_cost:.4f}（总代价 {total:.0f}）')
+```
+
+> **三个必须记住的实践要点**：
+> ① **`predict()` 内部就是"概率 > 0.5"**——它只是 `predict_proba()` 的一种默认取阈值方式。想要非 0.5 的阈值，就必须自己拿概率去比较，这也是"精确率/召回率权衡"在代码里的落点；
+> ② **阈值必须在验证集上选，不能在测试集上选**，否则阈值本身就过拟合了测试集；
+> ③ **阈值是业务量，不是模型量**——同一模型交付给"宁可误报"与"宁可漏报"的两条业务线，应当配两个不同阈值。因此工程上值得把"阈值"做成可在线调整的配置，而不是写死在代码里的常量。
+
+**scikit-learn 的接口对照。** 上述指标在 `sklearn.metrics` 中都有现成实现，常用对应关系如下：
+
+| 指标 | 函数 | 说明 |
+|---|---|---|
+| ROC 曲线 / AUC | `roc_curve` / `roc_auc_score` | 传入**概率或得分**，不要传硬标签 |
+| PR 曲线 / AP | `precision_recall_curve` / `average_precision_score` | 不平衡数据的首选 |
+| 混淆矩阵 | `confusion_matrix` | 多分类同样适用（行=真实类，列=预测类） |
+| 分类汇总报告 | `classification_report` | 一次给出各类的 P/R/F1 与支持数 |
+| 多分类平均 | `f1_score(average='macro'/'micro'/'weighted')` | macro 对每类等权，micro 受大类别主导 |
+| 排序质量 | `matthews_corrcoef`、`cohen_kappa_score` | 不平衡时比准确率稳健 |
+
 标注问题的输入是一个观测序列，输出是一个标记序列，可视为分类问题向序列预测的推广。标注常用的统计学习方法有隐马尔可夫模型和条件随机场，典型应用包括自然语言处理中的词性标注、信息抽取中的基本名词短语标注等。
 
 回归问题用于预测输入变量与输出变量之间的关系，其学习等价于函数拟合，最常用的损失函数是平方损失函数，此时回归问题可由最小二乘法求解。回归问题的评估指标从预测误差的尺度出发：**均方根误差（RMSE）** $\sqrt{\frac{1}{N}\sum_{i=1}^{N}(y_i-\hat{y}_i)^2}$，与因变量同量纲、最常用；**平均绝对误差（MAE）** $\frac{1}{N}\sum_{i=1}^{N}|y_i-\hat{y}_i|$，对离群点不敏感；**决定系数 $R^2$**，衡量模型解释的方差比例——取值最大为 1（完美拟合），可为负（比"恒预测均值"更差），常用于比较不同模型在同一数据集上的拟合优度。RMSE 与 MAE 给出误差的绝对尺度，$R^2$ 给出相对拟合优度，三者通常配合使用。
+
+### 概率校准
+
+精确率、召回率与 AUC 都只关心**排序**——把正例的分数排得比负例高即可，分数本身的数值大小并不重要。但很多业务要的不是排序，而是**可信的概率**：风控要"违约概率 3% 所以拒贷"、医疗要"患病概率 80% 所以复查"、广告要按 $p(\text{点击})$ 出价。此时"排序对"远远不够，还要求**预测概率与真实频率一致**：在所有被预测为 0.8 的样本里，应当确有约 80% 是正例。这一性质称为**校准（calibration）**。
+
+**为什么很多模型天然不校准？** 因为训练目标并未约束这一点：SVM 输出的是到超平面的距离（决策函数值），朴素贝叶斯的后验概率建立在"特征条件独立"的强假设上（假设不成立时概率被推向 0 或 1），深度网络则倾向于**过度自信**（预测 0.99 而实际正确率只有 0.9）。逻辑回归因为直接优化对数似然，通常校准得较好。
+
+**校准曲线**把这件事画出来：把预测概率分箱，横轴取每箱的平均预测概率，纵轴取该箱内实际的正例比例。完美校准的模型落在对角线上；曲线在对角线**下方**意味着模型过度自信，**上方**意味着过度保守。
+
+```python
+from sklearn.calibration import CalibrationDisplay, CalibratedClassifierCV
+from sklearn.svm import SVC
+from sklearn.metrics import brier_score_loss, log_loss
+
+# 对比三种模型的校准程度（SVM 不输出概率，需显式指定 probability=True 或用 decision_function）
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=2000, class_weight='balanced'),
+    'SVM(rbf)': SVC(C=1.0, gamma='scale', class_weight='balanced'),
+    'NaiveBayes': __import__('sklearn.naive_bayes', fromlist=['GaussianNB']).GaussianNB(),
+}
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(6, 6))
+for name, m in models.items():
+    m.fit(Xtr, ytr)
+    # 统一取概率：SVC 的 decision_function 需经 Platt 缩放才能变成概率
+    if hasattr(m, 'predict_proba'):
+        p = m.predict_proba(Xte)[:, 1]
+    else:
+        # 无概率接口的模型（如 SVC 默认）先把决策值压到 (0,1)，仅为示意；
+        # 正确的做法是用下面的 CalibratedClassifierCV 做 Platt 缩放
+        p = 1 / (1 + np.exp(-m.decision_function(Xte)))
+    print(f'{name:20s} Brier={brier_score_loss(yte, p):.4f} '
+          f'LogLoss={log_loss(yte, np.clip(p, 1e-6, 1 - 1e-6)):.4f} auc='
+          f'{roc_auc_score(yte, p):.4f}')
+    CalibrationDisplay.from_predictions(yte, p, n_bins=10, ax=ax, name=name)
+plt.title('校准曲线：越贴近对角线越可信')
+plt.show()
+
+# 校准方法：把分类器的输出再过一层单调映射
+calibrated = CalibratedClassifierCV(
+    SVC(C=1.0, gamma='scale', class_weight='balanced'),
+    method='sigmoid',      # 'sigmoid'=Platt Scaling；'isotonic'=保序回归
+    cv=5)                  # 内部交叉验证，避免用同一批数据既训练又校准
+calibrated.fit(Xtr, ytr)
+p_cal = calibrated.predict_proba(Xte)[:, 1]
+print('校准后 Brier:', round(brier_score_loss(yte, p_cal), 4))
+```
+
+**三种校准方法**：
+
+- **Platt Scaling（Sigmoid 校准）**：在验证集上拟合 $p = \sigma(a f + b)$，把模型输出 $f$ 经一维逻辑回归映射为概率。参数极少（两个），**小数据也稳定**，是默认选择；
+- **保序回归（Isotonic Regression）**：拟合一个单调不减的分段常数函数，更灵活但需要更多数据（否则会过拟合验证集），且只在数据充足时优于 Platt Scaling；
+- **温度缩放（Temperature Scaling）**：深度网络的专用做法——在 logits 上除以一个标量温度 $T$：$p = \text{softmax}(z/T)$，$T>1$ 会软化过于尖锐的概率分布。它只调一个参数、不改变预测类别（只改概率），是神经网络事后校准的标准手段：
+
+```python
+import torch
+import torch.nn.functional as F
+
+def fit_temperature(logits_val, y_val, iters=200):
+    """在验证集上用 LBFGS 拟合温度 T（只调一个标量，不改变 argmax 预测）"""
+    logits = torch.as_tensor(logits_val, dtype=torch.float32)
+    labels = torch.as_tensor(y_val, dtype=torch.long)
+    T = torch.nn.Parameter(torch.ones(1))
+    opt = torch.optim.LBFGS([T], lr=0.1, max_iter=iters)
+
+    def closure():
+        opt.zero_grad()
+        loss = F.cross_entropy(logits / T.clamp(min=1e-3), labels)
+        loss.backward()
+        return loss
+
+    opt.step(closure)
+    return float(T.detach())
+
+# 示意：T 通常 >1（模型过度自信时），校准后 NLL 下降而准确率不变
+print('拟合温度 T 的调用方式：fit_temperature(val_logits, val_labels)')
+```
+
+> **四个必须注意的细节**：
+> ① **校准必须用独立数据**（验证集或交叉验证），绝不能拿训练集校准——模型在训练集上往往已经"背下答案"，校准曲线会假性完美。`CalibratedClassifierCV` 的 `cv` 参数就是为此存在的；
+> ② **校准不改变排序，因此不改变 AUC**，也不改变任何与阈值无关的排序指标。它改变的是**概率的数值含义**，从而改变"按代价最优选出的阈值"以及依赖概率的下游决策（如期望收益计算）；
+> ③ **评价校准用 Brier 分数或对数损失，不要用准确率**。准确率只看 argmax 是否对，对概率的数值完全不敏感；Brier 分数 $\frac{1}{N}\sum(\hat p_i-y_i)^2$ 同时惩罚"排序错"与"过度自信"；
+> ④ **校准会随分布漂移而失效**。线上数据分布变化后，原先拟合的温度/映射不再适用，这属于"监控"要覆盖的项——与后文《从静态到数据流：在线学习与持续学习》中的漂移检测直接相关。
 
 ## 统计学习三要素
 

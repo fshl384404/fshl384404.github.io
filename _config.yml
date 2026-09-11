@@ -98,7 +98,7 @@ ignore:
 search:
   path: search.xml
   field: post
-  content: false
+  content: true
   format: html
 
 # Sitemap

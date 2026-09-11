@@ -391,6 +391,142 @@ ML 系统开发的常态循环：**选择架构 → 实现并训练 → 诊断�
 
 **F1 分数（调和平均）**：$F_1 = \frac{2PR}{P+R}$。为何不用算术平均：恒预测 $y=1$ 的算法 $R=1, P$ 极低，算术平均可观但算法无用；调和平均在任一值很小时整体很低，正确惩罚"偏科"。
 
+### 类别不平衡工具箱
+
+上一节说明了"不平衡时该看什么指标"，本节回答"然后怎么办"。手法分三类——**改损失**、**改数据**、**改决策**——三者的侵入性依次递减，建议按**由轻到重**的顺序尝试。
+
+#### 改损失：类别权重与代价敏感
+
+最轻的做法不动数据、只改损失函数：给少数类的样本乘一个更大的权重，让"漏掉一个少数类"的惩罚与"漏掉多个多数类"相当。二类问题中，把权重取为类别频率的倒数是最常见的起点：
+
+$$w_c = \frac{N}{C \cdot N_c} \quad\Rightarrow\quad \text{少数类权重} \approx \frac{\text{多数类样本数}}{\text{少数类样本数}}$$
+
+```python
+import numpy as np
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (average_precision_score, precision_score,
+                             recall_score, f1_score)
+
+X, y = make_classification(n_samples=20000, n_features=20, n_informative=6,
+                           weights=[0.99, 0.01], flip_y=0.01, random_state=0)
+Xtr, Xte, ytr, yte = X[:12000], X[12000:], y[:12000], y[12000:]
+print('训练集正例占比:', round(ytr.mean(), 4), '| 测试集正例占比:', round(yte.mean(), 4))
+
+def report(tag, score, thr=0.5):
+    pred = (score >= thr).astype(int)
+    print(f'{tag:26s} AP={average_precision_score(yte, score):.3f} '
+          f'P={precision_score(yte, pred, zero_division=0):.3f} '
+          f'R={recall_score(yte, pred, zero_division=0):.3f} '
+          f'F1={f1_score(yte, pred, zero_division=0):.3f}')
+
+base = LogisticRegression(max_iter=2000).fit(Xtr, ytr)
+report('无处理（阈值 0.5）', base.predict_proba(Xte)[:, 1])
+
+w_bal = LogisticRegression(max_iter=2000, class_weight='balanced').fit(Xtr, ytr)
+report('class_weight=balanced', w_bal.predict_proba(Xte)[:, 1])
+
+# 显式代价敏感：漏检代价是误报的 9 倍 -> 等价于给正类样本加权 9
+w_dict = {0: 1.0, 1: 9.0}
+w_cost = LogisticRegression(max_iter=2000, class_weight=w_dict).fit(Xtr, ytr)
+report('class_weight={0:1, 1:9}', w_cost.predict_proba(Xte)[:, 1])
+```
+
+> **注意 AUC/AP 不随权重改变而改变**（对同一模型族而言，加权会改变拟合出的决策面，但"排序能力"通常只有小幅变化）。真正被权重改变的是**默认可用的工作点**：不加权时模型会把绝大多数样本判为多数类（召回率接近 0），加权后默认工作点移向少数类（召回率大幅上升、精确率下降）。所以"加权有没有用"要在**同一阈值下**比较，或者干脆用 AP/AUC 比较排序、用代价曲线比较决策。
+
+`class_weight='balanced'` 适合**只关心"别漏掉"**的场景；而 `{0: 1, 1: 9}` 这类显式代价把业务判断写进模型，可解释性更好。代价敏感学习的极端形式是把代价直接写进目标函数（如"每漏检一次罚 100 元、每误报一次罚 10 元"），这在风控与工业报警中很常见。
+
+#### 改数据：重采样与 SMOTE
+
+第二类做法调整训练集的类别构成。**注意：只对训练集动手，验证集与测试集必须保持真实分布**——对测试集做重采样会把"现实中的不平衡"人为抹平，评估结果将完全失真，这是新手最容易犯的评估错误之一。
+
+| 方法 | 做法 | 优点 | 风险 |
+|---|---|---|---|
+| 随机欠采样 | 随机丢弃多数类样本 | 训练快、缓解不平衡 | **丢信息**；样本少时损害严重 |
+| 随机过采样 | 重复少数类样本 | 不丢信息 | **易过拟合**（同一批样本反复出现） |
+| SMOTE 及其变体 | 在少数类近邻之间插值生成新样本 | 引入多样性、不只是复制 | 高维/稀疏特征上近邻不可靠；会跨越类别边界生成"不可能样本" |
+| 混合（SMOTEENN、SMOTETomek） | 先过采样再清洗噪声与边界样本 | 兼顾两方 | 流程更复杂、计算更贵 |
+
+```python
+from imblearn.over_sampling import SMOTE, RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline as ImbPipeline
+
+def fit_resampled(sampler, tag):
+    pipe = ImbPipeline([('sampler', sampler),
+                        ('clf', LogisticRegression(max_iter=2000))])
+    pipe.fit(Xtr, ytr)                     # 采样只作用于 fit 内部，预测时不再采样
+    report(tag, pipe.predict_proba(Xte)[:, 1])
+
+fit_resampled(RandomUnderSampler(random_state=0), '随机欠采样')
+fit_resampled(RandomOverSampler(random_state=0), '随机过采样')
+fit_resampled(SMOTE(random_state=0, k_neighbors=5), 'SMOTE')
+
+# SMOTE 的 k 近邻在高维稀疏数据上不可靠：看生成样本与原始样本的距离分布
+from sklearn.neighbors import NearestNeighbors
+X_res, y_res = SMOTE(random_state=0).fit_resample(Xtr, ytr)
+nn = NearestNeighbors(n_neighbors=2).fit(Xtr)
+d, _ = nn.kneighbors(X_res[y_res == 1])
+print('少数类样本到训练集最近邻的平均距离:', round(d[:, 1].mean(), 3))
+```
+
+**SMOTE 什么时候会失效**：① 特征维度远大于样本数（距离度量失去意义，所谓"近邻"已不近）；② 少数类样本被多数类包围（插值会生成落在多数类区域内的假样本，反而制造噪声）；③ 类别不平衡并非"数据少"而是"标签稀有"（如极端事件），此时生成样本等于凭空编造现象，风险极大。**在这三种情况下，改损失或改决策通常比 SMOTE 更稳。**
+
+#### 改决策：阈值移动与 Focal Loss
+
+第三类做法完全不动数据与损失，只改**决策规则**——把阈值从 0.5 移向少数类。这是侵入性最小、也最该优先尝试的一招：上一节已经说明，`predict()` 内部的 0.5 是纯约定，与业务无关。
+
+```python
+score = base.predict_proba(Xte)[:, 1]
+print('阈值移动的效果（同一模型，只改决策阈值）：')
+for thr in (0.5, 0.2, 0.1, 0.05, 0.02, 0.01):
+    pred = (score >= thr).astype(int)
+    print(f'  thr={thr:<5} P={precision_score(yte, pred, zero_division=0):.3f} '
+          f'R={recall_score(yte, pred, zero_division=0):.3f} '
+          f'F1={f1_score(yte, pred, zero_division=0):.3f}')
+```
+
+对比前面加权的结果可以看出：**加权与阈值移动在很多情况下能达到相近的工作点**。既然如此，优先选阈值移动——它不改变模型、不复制样本、可在线调节、出问题能立刻回退。
+
+**Focal Loss** 是"改损失"的进阶形式，专为**极度不平衡 + 大量易分样本**的场景设计。它把交叉熵中的每个样本按"预测得有多好"加权：
+
+$$\text{FL}(p_t) = -\alpha_t (1-p_t)^{\gamma}\log p_t$$
+
+其中 $p_t$ 是真实类的预测概率，$\gamma$ 是聚焦参数。作用机制：当一个样本已经被预测得很准（$p_t\to 1$）时，$(1-p_t)^\gamma\to 0$，它的损失被压到几乎为零，梯度不再被这些"已经学会的"多数类样本占据；模型因此把学习能力集中在少数难样本与少数类上。$\gamma=0$ 退化为普通加权交叉熵，实践中常用 $\gamma=2$、$\alpha$ 取类别频率的倒数（如 $\alpha=0.25$ 配正类稀少的情形）。它最初用于目标检测（RetinaNet）解决正负样本极度失衡的问题，此后广泛用于分割、排序与异常检测。
+
+```python
+import torch
+import torch.nn.functional as F
+
+def focal_loss(logits, targets, alpha=0.25, gamma=2.0):
+    """Focal Loss：alpha 平衡类别，gamma 压制易分样本"""
+    logp = F.log_softmax(logits, dim=-1)
+    logpt = logp.gather(1, targets.view(-1, 1)).squeeze(1)
+    pt = logpt.exp()
+    at = torch.where(targets == 1, alpha, 1 - alpha).float()
+    return -(at * (1 - pt) ** gamma * logpt).mean()
+
+# 示意：真实类概率越高，损失被压得越低（gamma 越大越明显）
+for pt in (0.9, 0.6, 0.2):
+    logit = torch.tensor([[0.0, float(np.log(pt / (1 - pt)))]])
+    tgt = torch.tensor([1])
+    print(f'  p_t={pt}: 交叉熵 {F.cross_entropy(logit, tgt):.4f} '
+          f'-> Focal {focal_loss(logit, tgt):.4f}')
+```
+
+#### 决策清单
+
+| 症状 | 首选 | 其次 |
+|---|---|---|
+| 少数类召回率几乎为 0，但 AP 尚可 | **阈值移动** | 类别权重 |
+| 两类错误代价明确不同（漏检更贵） | **代价敏感**（显式代价权重） | 阈值移动（按代价曲线选点） |
+| 少数类样本太少（几十条以内） | 类别权重 | 谨慎用 SMOTE（并严格交叉验证） |
+| 数据量大、多数类冗余明显 | 随机欠采样 | 混合采样 |
+| 高维稀疏特征（文本、one-hot） | 类别权重 | **不要用 SMOTE** |
+| 深度模型 + 海量易分负样本 | Focal Loss | 难例挖掘（hard negative mining） |
+
+**最后一条纪律**：任何不平衡处理都**只在训练侧生效**，且必须用**分层交叉验证**（`StratifiedKFold`）来选超参数——否则某折里可能一个少数类样本都没有，指标会剧烈抖动甚至报错。评估时始终在**原始分布**的验证/测试集上，用 AP 与代价曲线而非准确率来判定优劣。
+
 ### 完整项目生命周期与 MLOps
 
 **全周期六阶段**：项目范围界定 → 数据收集 → 训练模型（含误差分析、偏差/方差分析、迭代）→ 部署（inference server + API 调用模式）→ 监控与维护 → 迭代。**典型失败模式**：模型训练分布与线上分布偏移（如新名字不在训练集）→ 监控发现精度下降 → 重训更新。**MLOps** 即系统化构建、部署、维护 ML 系统的实践领域。

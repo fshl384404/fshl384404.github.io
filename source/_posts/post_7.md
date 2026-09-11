@@ -3583,6 +3583,212 @@ def set_trace():
 
 ---
 
+
+---
+
+## 附录C：信号处理的 Python 工具箱
+
+前文的特征工程都在**原始坐标轴**上做：把某一列做分箱、取对数、算滚动均值。但有一大类数据——音频、振动、电流、心率、气象——它们的有效信息藏在**频率**里：一段设备振动信号，看波形几乎一样，看频谱却能立刻分出"正常"与"轴承磨损"。把数据从时域搬到频域，是人工特征工程中最有物理依据的一步，也是深度学习之前时序任务的主要手段。
+
+本附录给出这条链路的最小可用工具集。它可以独立阅读，也是后续在线学习／持续学习与工业异常检测主题的公共前置。
+
+### 傅里叶变换：换个基看数据
+
+**离散傅里叶变换（DFT）** 把长度为 $N$ 的序列 $x_n$ 分解为 $N$ 个不同频率的复指数分量：
+
+$$X_k = \sum_{n=0}^{N-1} x_n e^{-2\pi i kn/N}, \qquad x_n = \frac{1}{N}\sum_{k=0}^{N-1} X_k e^{2\pi i kn/N}$$
+
+直觉上，$x$ 是信号在"时间基"下的坐标，$X$ 是同一个信号在"频率基"下的坐标——**变换不增删信息，只是换了一组坐标轴**，而这组新坐标轴恰好让"周期性"这件事变得一目了然。$|X_k|$ 是第 $k$ 个频率分量的**幅度**，$\arg X_k$ 是它的**相位**。
+
+**快速傅里叶变换（FFT）** 是 DFT 的分治算法，把复杂度从 $O(N^2)$ 降到 $O(N\log N)$（这正是《从Python基础到数据分析》开篇所说"核心算法以 C/Fortran 实现、Python 只做调用"的典型例子）。NumPy 的 `np.fft` 即 FFT 实现：
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 构造一个由 2 Hz 与 5 Hz 两个分量叠加而成的信号
+fs = 100.0                          # 采样率：每秒 100 个点
+t = np.arange(0, 2.0, 1 / fs)       # 2 秒，共 200 个采样点
+x = 1.5 * np.sin(2 * np.pi * 2 * t) + 0.6 * np.sin(2 * np.pi * 5 * t)
+
+X = np.fft.rfft(x)                  # 实信号的半谱：只取非负频率，长度 N//2+1
+freqs = np.fft.rfftfreq(len(x), d=1 / fs)   # 每条谱线对应的频率
+amp = np.abs(X) / len(x) * 2        # 幅度归一化（除直流外，双边谱能量折半到单边故乘 2）
+amp[0] /= 2                          # 直流分量不乘 2
+
+# 谱峰位置即信号的真实频率
+peaks = freqs[np.argsort(amp)[-2:]]
+print('检测到的主频:', np.sort(peaks))          # 输出接近 [2. 5.]
+
+plt.plot(freqs, amp)
+plt.xlabel('频率 (Hz)'); plt.ylabel('幅度'); plt.title('幅度谱')
+plt.show()
+```
+
+三点必须注意：
+
+1. **采样率决定频率上限**：可分辨的最高频率是**奈奎斯特频率** $f_s/2$（本例 50 Hz）。高于它的成分不会消失，而是"折叠"成虚假的低频（**混叠，aliasing**）——所以采集前要先做抗混叠滤波，这不是可选项；
+2. **频率分辨率是 $f_s/N$**：想分辨 0.1 Hz 的差别，就需要 $N \ge f_s/0.1$ 个采样点。**加零不能提高分辨率**，只是把谱线插值得更密（`np.fft.rfft(x, n=4096)` 常被误用为"提高精度"）；
+3. **`rfft` 与 `fft`**：实信号用 `rfft` 返回半谱（非负频率），既省一半计算也不会有冗余的共轭对称部分；`fft` 返回全谱，幅度谱前后对称。
+
+### 频域特征：把频谱变成一个特征向量
+
+有了谱，就可以像前文对表格列做特征工程一样，**从频谱里再提取标量特征**。这是传统时序分类/异常检测的主力（也是"物理特征工程"一词的由来）：
+
+```python
+def spectral_features(x, fs):
+    """从一维时序片段中提取常用频域特征"""
+    X = np.fft.rfft(x)
+    f = np.fft.rfftfreq(len(x), d=1 / fs)
+    mag = np.abs(X)
+    total = mag.sum() + 1e-12            # 防止除零（全零信号）
+
+    centroid = (f * mag).sum() / total                       # 谱质心：能量的"重心"频率
+    spread = np.sqrt(((f - centroid) ** 2 * mag).sum() / total)   # 谱带宽
+    peak_freq = f[np.argmax(mag)]                            # 主频
+    rolloff = f[np.searchsorted(np.cumsum(mag), 0.85 * total)]    # 85% 能量点
+
+    # 频带能量占比：把频域切成若干段，各段能量占比
+    bands = np.array_split(mag, 4)
+    band_energy = [b.sum() / total for b in bands]
+
+    return {'centroid': centroid, 'spread': spread, 'peak_freq': peak_freq,
+            'rolloff': rolloff, 'band_energy': band_energy}
+
+feat = spectral_features(x, fs)
+print({k: (round(v, 3) if isinstance(v, float) else [round(b, 3) for b in v])
+       for k, v in feat.items()})
+```
+
+**这些特征为什么有用**：谱质心与谱带宽刻画"音色"（明亮/沉闷），主频对应旋转机械的转速或其倍频，频带能量占比能把"低频噪声变大"这类退化直接量化。轴承故障诊断、电机异常检测、心音分类的经典做法，都是"分帧 → 每帧提频域特征 → 喂给树模型/SVM"。把这类特征拼进前文的 Titanic 式流水线，就是一个完整的传统时序方案。
+
+### STFT 与频谱图：给"频率随时间变化"留出位置
+
+FFT 有一个致命假设：**信号在整个窗口内是平稳的**。但真实信号几乎从不平稳——一句话的前半段与后半段频率不同，机器启动瞬间与稳态运行时频率也不同。对整段做 FFT，得到的是"平均后的频谱"，时间信息被彻底抹掉。
+
+**短时傅里叶变换（STFT）** 的解法是加窗：把长信号切成许多短段，每段各自做 FFT，再按时间顺序排列成二维矩阵——这就是**频谱图（spectrogram）**：
+
+```python
+from scipy import signal
+
+# 频率随时间上升的线性调频信号（chirp）
+t = np.arange(0, 4.0, 1 / fs)
+x = np.sin(2 * np.pi * (2 + 3 * t) * t)
+
+f, tt, Zxx = signal.stft(x, fs=fs, nperseg=128, noverlap=96)
+print('频谱图形状 (频率 × 时间):', Zxx.shape)
+
+plt.pcolormesh(tt, f, np.abs(Zxx), shading='gouraud')
+plt.ylabel('频率 (Hz)'); plt.xlabel('时间 (s)'); plt.title('STFT 频谱图')
+plt.colorbar(label='幅度'); plt.show()
+
+# 工程上更常用功率谱密度版（Welch 法：分段 + 平均，更平滑、方差更小）
+f_w, psd = signal.welch(x, fs=fs, nperseg=256)
+```
+
+**这里有一个绕不开的取舍**——**时频不确定性**（海森堡测不准原理的信号版本）：窗口越长，频率分辨率越高，但时间定位越模糊；窗口越短，时间定位越准，但频率越糊。`nperseg` 就是调节这个天平的旋钮：
+
+$$\Delta f \approx \frac{f_s}{N_{\text{window}}}, \qquad \Delta t \approx \frac{N_{\text{window}}}{f_s}, \qquad \Delta f \cdot \Delta t \approx 1$$
+
+实践中：分析**稳态**旋转机械用长窗（要精确的主频），检测**瞬态冲击**用短窗（要准确定位故障时刻）。`noverlap` 是相邻窗的重叠长度，重叠越多帧越密、越平滑，但计算量越大（常用 50%~75% 重叠）。
+
+**频谱图本身就是一张图像**——这是时序与视觉的汇合点：既然 STFT 把一维信号变成二维"频率×时间"图，那么前文《从卷积到序列》里的 CNN 就能直接用在它上面。音频分类、语音识别、机械故障诊断中"把频谱图当图片喂 CNN"是很成熟的做法，其局部性假设（相邻频率、相邻时刻相关）也天然成立。
+
+### 小波变换：多分辨率地看
+
+STFT 的窗口**固定**，因此所有频率用的是同一个时间分辨率。但直觉上，低频成分变化慢、可以用长窗，高频成分变化快、需要短窗。**小波变换（wavelet transform）** 正是让窗口随频率自适应变化：用一族"被拉伸和压缩的母小波"去匹配信号——低频用宽小波（高频率分辨率），高频用窄小波（高时间分辨率）。这被称为**多分辨率分析**。
+
+```python
+import pywt
+
+# 连续小波变换：直接得到可视图
+scales = np.arange(1, 64)
+coeffs, freqs_cwt = pywt.cwt(x, scales, 'morl', sampling_period=1 / fs)
+plt.imshow(np.abs(coeffs), aspect='auto', cmap='jet',
+           extent=[t[0], t[-1], freqs_cwt[-1], freqs_cwt[0]])
+plt.yscale('log'); plt.ylabel('频率 (Hz)'); plt.xlabel('时间 (s)')
+plt.title('CWT 尺度图'); plt.show()
+
+# 离散小波变换：把信号分解为"近似 + 细节"，天然适合做多尺度特征与去噪
+coeffs = pywt.wavedec(x, 'db4', level=3)     # 返回 [cA3, cD3, cD2, cD1]
+cA3, *details = coeffs
+energy = [float(np.sum(c ** 2)) for c in coeffs]   # 各尺度能量：又一组可用的特征
+print('各层能量占比:', np.round(np.array(energy) / np.sum(energy), 3))
+```
+
+小波的两个典型用途：① **去噪**——对细节系数做阈值收缩（`pywt.threshold`）后重构，能在保留突变（如冲击）的同时去掉白噪声，比低通滤波更不容易把有用边缘磨平；② **多尺度特征**——`wavedec` 各层能量构成的特征向量，对非平稳信号往往比 FFT 特征更稳。
+
+### 自相关与互相关：找周期与找延迟
+
+**自相关函数**衡量信号与自身平移后的相似度，是检测周期性的直接工具——周期性强的信号，自相关会在周期整数倍处出现明显峰：
+
+```python
+def dominant_period(x, fs, min_lag=1):
+    """用自相关估计主周期（秒）"""
+    x = x - x.mean()                      # 去均值，否则直流分量会污染结果
+    ac = np.correlate(x, x, mode='full')[len(x) - 1:]
+    ac /= ac[0] + 1e-12                   # 归一化到 1
+    # 跳过 0 附近的单调下降段，取第一个显著峰
+    peaks, _ = signal.find_peaks(ac[min_lag:], height=0.3)
+    if len(peaks) == 0:
+        return None
+    return float(peaks[0] + min_lag) / fs
+
+# 互相关：求两个信号之间的时间延迟（如两个麦克风的到达时间差、传感器间滞后）
+def lag_between(a, b, fs):
+    a = (a - a.mean()) / (a.std() + 1e-12)
+    b = (b - b.mean()) / (b.std() + 1e-12)
+    cc = np.correlate(a, b, mode='full') / len(a)
+    lags = np.arange(-len(a) + 1, len(a))
+    return float(lags[np.argmax(cc)]) / fs
+```
+
+注意必须先**去均值**：否则常数分量会在零延迟处制造一个巨大的伪峰，把真实周期淹没。
+
+### 完整示例：音频的梅尔频谱
+
+音频是信号处理最经典的应用场景，`librosa` 把这些工具串成了一条流水线。**梅尔频谱**是频谱图的感知版本——人耳对频率的感知不是线性的（低频分辨力强、高频弱），梅尔刻度正是按人耳特性重新排布频率轴：
+
+```python
+import librosa
+import librosa.display
+
+y, sr = librosa.load('example.wav', sr=None)     # y: 波形, sr: 采样率
+print(f'时长 {len(y)/sr:.2f}s, 采样率 {sr}Hz')
+
+# 梅尔频谱图（dB 刻度）
+S = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=2048, hop_length=512,
+                                   n_mels=128, fmin=20, fmax=sr // 2)
+S_db = librosa.power_to_db(S, ref=np.max)
+
+librosa.display.specshow(S_db, sr=sr, hop_length=512,
+                         x_axis='time', y_axis='mel')
+plt.colorbar(format='%+2.0f dB'); plt.title('梅尔频谱'); plt.show()
+
+# 打包成可直接喂给 CNN/树模型的特征
+mfcc = librosa.feature.mfcc(S=S_db, n_mfcc=20)          # 20 维 MFCC
+contrast = librosa.feature.spectral_contrast(S=np.abs(librosa.stft(y)))
+```
+
+**这条流水线就是"图像分类"的入口**：`S_db` 是一个二维数组，可以当作单通道图像直接送进 CNN；`mfcc` 的列向量则可以作为定长特征喂给 XGBoost。前文《从卷积到序列》中的卷积先验（局部连接、平移等变）在频谱图上同样成立，这也是语音与音频任务长期使用 CNN 的原因。
+
+### 小结
+
+| 工具 | 解决什么 | 典型特征/输出 |
+|---|---|---|
+| FFT（`np.fft`） | 平稳信号的频率成分 | 幅度谱、主频、谱质心、频带能量 |
+| STFT（`scipy.signal.stft`） | 频率随时间变化 | 频谱图（频率×时间二维矩阵） |
+| Welch（`scipy.signal.welch`） | 降低谱估计方差 | 平滑的功率谱密度 |
+| 小波（`pywt`） | 多分辨率、去噪、瞬态检测 | 尺度图、各层能量 |
+| 自相关／互相关 | 周期检测、延迟估计 | 主周期、时延 |
+| `librosa` | 音频专用流水线 | 梅尔频谱、MFCC、谱对比度 |
+
+**三条实践提醒**：① 先想清楚采样率与分辨率，再谈模型——采集阶段丢掉的频率信息，后面任何算法都补不回来（混叠一旦发生不可逆）；② 频域特征与前文的表格特征是**并列关系**，可以拼在同一个特征矩阵里，让树模型自己选择；③ 频域变换是**无参数特征提取**，不需要训练，因此在小数据场景下往往比直接上深度学习更稳、更可解释——这也解释了为什么工业界至今仍在大量使用"频域特征 + LightGBM"。
+
+> **衔接**：频域特征与时域统计量（均值、方差、偏度、峰度、过零率）合起来构成时序任务的"物理特征基线"，后续《从静态到数据流：在线学习与持续学习》会在这个基线上讨论概念漂移与模型更新；《从卷积到序列》的 CNN 则是把频谱图当作图像来用的另一条路线。两条路线的分界点是**数据量**：数据少用特征工程 + 树模型，数据多再用端到端网络。
+
+---
+
 ## 结语
 
 数据分析的本质，是将混乱的现实数据转化为可信结论的一套纪律，其核心能力在于面对陌生数据时，能够按"加载 → 清洗 → 规整 → 探索 → 聚合 → 可视化 → 建模"的流程完成分析。本文提供的所有 API 知识都会随时间继续演化，但面对陌生数据时按流程推进的分析能力不会过时。将文中的代码逐一运行、修改并应用于你自己的数据，是从阅读转向实践的最短路径。
