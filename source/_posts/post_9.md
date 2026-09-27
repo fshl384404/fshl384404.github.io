@@ -310,7 +310,7 @@ $$a_j = \frac{e^{z_j}}{\sum_{k=1}^{K}e^{z_k}}, \qquad j=1,\dots,K$$
 
 对测试点 $x$，设真实函数为 $f^*$，模型预测的期望均方误差可分解为：
 
-$$\mathbb{E}\left[(f(x)-f^(x))^2\right] = \underbrace{\left(\mathbb{E}[f(x)]-f^(x)\right)^2}{\text{偏差}^2} + \underbrace{\mathbb{E}\left[(f(x)-\mathbb{E}[f(x)])^2\right]}{\text{方差}} + \underbrace{\sigma^2}_{\text{不可约噪声}}$$
+$$\mathbb{E}\left[(f(x)-f^*(x))^2\right] = \underbrace{\left(\mathbb{E}[f(x)]-f^*(x)\right)^2}_{\text{偏差}^2} + \underbrace{\mathbb{E}\left[(f(x)-\mathbb{E}[f(x)])^2\right]}_{\text{方差}} + \underbrace{\sigma^2}_{\text{不可约噪声}}$$
 
 **偏差**对应欠拟合（模型假设与真实函数的系统性偏离），**方差**对应过拟合（模型对训练集变化的敏感度），**不可约噪声**无法消除。偏差与方差之间存在权衡：增大模型容量降低偏差但升高方差。这一框架是工程诊断方法论的理论基础。
 
@@ -318,7 +318,7 @@ $$\mathbb{E}\left[(f(x)-f^(x))^2\right] = \underbrace{\left(\mathbb{E}[f(x)]-f^(
 
 **正则化损失函数**（以线性回归为例）：
 
-$$J(\mathbf{w},b) = \underbrace{\frac{1}{2m}\sum_{i=1}^{m}\left(f(\mathbf{x}^{(i)})-y^{(i)}\right)^2}\_{\mathrm{拟合项}} + \underbrace{\frac{\lambda}{2m}\sum_{j=1}^{n}w_j^2}_{\mathrm{正则化项}}$$
+$$J(\mathbf{w},b) = \underbrace{\frac{1}{2m}\sum_{i=1}^{m}\left(f(\mathbf{x}^{(i)})-y^{(i)}\right)^2}_{\mathrm{拟合项}} + \underbrace{\frac{\lambda}{2m}\sum_{j=1}^{n}w_j^2}_{\mathrm{正则化项}}$$
 
 $\lambda$ 为**正则化参数**，权衡"拟合训练数据"与"约束参数幅值"两个目标。$\lambda=0$ 无正则化 → 过拟合；$\lambda\to\infty$ 参数被压至近 0，模型退化为常数 → 欠拟合。合适值介于其间。
 

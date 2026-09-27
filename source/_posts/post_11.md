@@ -607,7 +607,7 @@ softmax 回归与线性回归一样是单层神经网络：输出层的神经元
 
 设输入特征为 $\mathbf{x}$，输出层权重为 $\mathbf{W}$（$d\times q$ 矩阵，$q$ 为类别数）、偏置为 $\mathbf{b}$，则第 $i$ 类的线性得分 $o_i = \mathbf{x}^\top\mathbf{w}_i + b_i$（$\mathbf{w}_i$ 为 $\mathbf{W}$ 的第 $i$ 列）。**softmax 运算**将 $q$ 个得分转换为 $q$ 个和为 1 的非负概率：
 
-$$\hat{y}\_1, \hat{y}\_2, \ldots, \hat{y}\_q = \text{softmax}(o_1, o_2, \ldots, o_q), \qquad \hat{y}\_j = \frac{\exp(o_j)}{\sum_{k=1}^{q}\exp(o_k)}$$
+$$\hat{y}_1, \hat{y}_2, \ldots, \hat{y}_q = \text{softmax}(o_1, o_2, \ldots, o_q), \qquad \hat{y}_j = \frac{\exp(o_j)}{\sum_{k=1}^{q}\exp(o_k)}$$
 
 **性质**：① $\hat{y}_j \in (0,1)$ 且 $\sum_j \hat{y}_j = 1$，构成合法概率分布；② 指数运算放大得分差异——得分最高的类别获得最高的概率；③ softmax 对得分做的是单调变换，**不改变类别的相对排序**，因此分类决策取 $\arg\max_j \hat{y}_j$（等价于 $\arg\max_j o_j$）。
 
@@ -619,7 +619,7 @@ $$\hat{y}\_1, \hat{y}\_2, \ldots, \hat{y}\_q = \text{softmax}(o_1, o_2, \ldots, 
 
 设真实类别为 $y$，则交叉熵损失只取真实类别对应的预测概率：
 
-$$\ell(\mathbf{o}, y) = -\log \hat{y}\_y = -\log\frac{\exp(o_y)}{\sum_{k=1}^{q}\exp(o_k)}$$
+$$\ell(\mathbf{o}, y) = -\log \hat{y}_y = -\log\frac{\exp(o_y)}{\sum_{k=1}^{q}\exp(o_k)}$$
 
 直观理解：若模型给真实类别 $y$ 的概率 $\hat{y}_y$ 接近 1，损失接近 0；若给的概率很小，损失急剧增大。交叉熵还可解释为**最大似然估计**：对真实标签 $y$ 使用独热（one-hot）编码后，交叉熵等价于多项分布假设下的负对数似然——这与线性回归中"平方损失 = 高斯噪声假设下的负对数似然"的结构完全平行。
 
@@ -1393,7 +1393,7 @@ gd(0.2)   # epoch 10, x: 0.06046617599999997
 
 **动量法（momentum）** 引入**速度变量**，对梯度做**指数加权移动平均**（见下），用历史的"惯性"平滑更新方向：沿同一方向的梯度累积加速，来回震荡的梯度相互抵消。更新规则：
 
-$$\mathbf{v}\_t \leftarrow \gamma\\,\mathbf{v}\_{t-1} + \eta\\,\nabla f(\mathbf{x}_{t-1}), \qquad \mathbf{x}\_t \leftarrow \mathbf{x}\_{t-1} - \mathbf{v}_t$$
+$$\mathbf{v}_t \leftarrow \gamma\,\mathbf{v}_{t-1} + \eta\,\nabla f(\mathbf{x}_{t-1}), \qquad \mathbf{x}_t \leftarrow \mathbf{x}_{t-1} - \mathbf{v}_t$$
 
 其中 $\gamma$（通常取 0.9）是**动量超参数**。与 SGD 相比，动量法能用更大的学习率而保持稳定，收敛显著加速；动量的"惯性"也帮助越过浅的局部极小与鞍点。
 
@@ -1405,7 +1405,7 @@ $$\mathbf{v}\_t \leftarrow \gamma\\,\mathbf{v}\_{t-1} + \eta\\,\nabla f(\mathbf{
 
 动量法解决了**方向**问题，但所有参数仍共享一个学习率。**AdaGrad**（Duchi et al., 2011）让每个参数拥有**自适应学习率**：按参数历史梯度的平方累积调整步长——梯度大的参数学习率自动变小，梯度小的参数学习率相对变大。更新规则：
 
-$$\mathbf{s}\_t \leftarrow \mathbf{s}_{t-1} + \mathbf{g}_t \odot \mathbf{g}_t, \qquad \mathbf{x}\_t \leftarrow \mathbf{x}\_{t-1} - \frac{\eta}{\sqrt{\mathbf{s}_t + \epsilon}} \odot \mathbf{g}_t$$
+$$\mathbf{s}_t \leftarrow \mathbf{s}_{t-1} + \mathbf{g}_t \odot \mathbf{g}_t, \qquad \mathbf{x}_t \leftarrow \mathbf{x}_{t-1} - \frac{\eta}{\sqrt{\mathbf{s}_t + \epsilon}} \odot \mathbf{g}_t$$
 
 其中 $\mathbf{g}_t$ 是梯度，$\epsilon$（如 $10^{-6}$）防止除零。在 $f(x,y) = 0.1x^2 + 2y^2$ 上，AdaGrad 能以 $\eta=0.4$ 甚至 2.0 稳定收敛——大幅度的学习率不再导致发散，因为陡峭方向上的累积平方梯度迅速压低了有效步长。
 
@@ -1417,7 +1417,7 @@ $$\mathbf{s}\_t \leftarrow \mathbf{s}_{t-1} + \mathbf{g}_t \odot \mathbf{g}_t, \
 
 **RMSProp**（Tieleman & Hinton, 2012）针对 AdaGrad 学习率单调衰减的问题，将"累积全部历史平方梯度"改为**指数加权移动平均**——只关注最近的梯度幅度，学习率不会单调趋零：
 
-$$\mathbf{s}\_t \leftarrow \gamma\\,\mathbf{s}\_{t-1} + (1-\gamma)\\,\mathbf{g}_t \odot \mathbf{g}_t, \qquad \mathbf{x}_t \leftarrow \mathbf{x}\_{t-1} - \frac{\eta}{\sqrt{\mathbf{s}_t + \epsilon}} \odot \mathbf{g}_t$$
+$$\mathbf{s}_t \leftarrow \gamma\,\mathbf{s}_{t-1} + (1-\gamma)\,\mathbf{g}_t \odot \mathbf{g}_t, \qquad \mathbf{x}_t \leftarrow \mathbf{x}_{t-1} - \frac{\eta}{\sqrt{\mathbf{s}_t + \epsilon}} \odot \mathbf{g}_t$$
 
 $\gamma$（默认 0.9）控制移动平均窗口。在拉长椭圆目标上，RMSProp 以 $\eta=0.4$、$\gamma=0.9$ 快速收敛（20 轮后 $x_1\approx-0.011$，而 AdaGrad 同参数下为 $-2.38$）。**简洁实现**：`torch.optim.RMSprop(params, lr=0.01, alpha=0.9)`（PyTorch 中移动平均参数名为 `alpha`）。
 
@@ -1425,7 +1425,7 @@ $\gamma$（默认 0.9）控制移动平均窗口。在拉长椭圆目标上，RM
 
 **AdaDelta**（Zeiler, 2012）在 RMSProp 基础上做了两点改进：① 用**参数增量**（而非梯度）的平方的 EWMA 替换学习率；② **完全消除学习率超参数**。更新规则：
 
-$$\mathbf{s}\_t \leftarrow \rho\\,\mathbf{s}\_{t-1} + (1-\rho)\\,\mathbf{g}_t^2, \qquad \mathbf{g}'\_t = \sqrt{\frac{\Delta\_{t-1} + \epsilon}{\mathbf{s}_t + \epsilon}}\,\mathbf{g}_t, \qquad \mathbf{x}_t \leftarrow \mathbf{x}\_{t-1} - \mathbf{g}'_t$$
+$$\mathbf{s}_t \leftarrow \rho\,\mathbf{s}_{t-1} + (1-\rho)\,\mathbf{g}_t^2, \qquad \mathbf{g}'_t = \sqrt{\frac{\Delta_{t-1} + \epsilon}{\mathbf{s}_t + \epsilon}}\,\mathbf{g}_t, \qquad \mathbf{x}_t \leftarrow \mathbf{x}_{t-1} - \mathbf{g}'_t$$
 
 $$\Delta_t \leftarrow \rho\,\Delta_{t-1} + (1-\rho)\,(\mathbf{g}'_t)^2$$
 
@@ -1435,9 +1435,9 @@ $$\Delta_t \leftarrow \rho\,\Delta_{t-1} + (1-\rho)\,(\mathbf{g}'_t)^2$$
 
 **Adam**（Kingma & Ba, 2014）是当前深度学习的**事实标准优化器**，可视为**动量法 + RMSProp** 的结合：既维护梯度的一阶矩（动量 $\mathbf{v}_t$），又维护二阶矩（梯度平方的 EWMA $\mathbf{s}_t$），并引入**偏差修正**消除初始化阶段的偏差：
 
-$$\mathbf{v}\_t \leftarrow \beta_1 \mathbf{v}\_{t-1} + (1-\beta_1)\mathbf{g}_t, \qquad \mathbf{s}\_t \leftarrow \beta_2 \mathbf{s}\_{t-1} + (1-\beta_2)\mathbf{g}_t^2$$
+$$\mathbf{v}_t \leftarrow \beta_1 \mathbf{v}_{t-1} + (1-\beta_1)\mathbf{g}_t, \qquad \mathbf{s}_t \leftarrow \beta_2 \mathbf{s}_{t-1} + (1-\beta_2)\mathbf{g}_t^2$$
 
-$$\hat{\mathbf{v}}_t = \frac{\mathbf{v}_t}{1 - \beta_1^t}, \qquad \hat{\mathbf{s}}_t = \frac{\mathbf{s}_t}{1 - \beta_2^t}, \qquad \mathbf{x}_t \leftarrow \mathbf{x}\_{t-1} - \frac{\eta}{\sqrt{\hat{\mathbf{s}}_t} + \epsilon}\hat{\mathbf{v}}_t$$
+$$\hat{\mathbf{v}}_t = \frac{\mathbf{v}_t}{1 - \beta_1^t}, \qquad \hat{\mathbf{s}}_t = \frac{\mathbf{s}_t}{1 - \beta_2^t}, \qquad \mathbf{x}_t \leftarrow \mathbf{x}_{t-1} - \frac{\eta}{\sqrt{\hat{\mathbf{s}}_t} + \epsilon}\hat{\mathbf{v}}_t$$
 
 **偏差修正的必要性**：$\mathbf{v}_t, \mathbf{s}_t$ 初始化为 0，训练初期被严重低估——除以 $1-\beta^t$ 可消除该偏差（$t$ 为迭代步数，$\beta_1=0.9, \beta_2=0.999$ 为默认值，$\epsilon=10^{-6}$）。
 

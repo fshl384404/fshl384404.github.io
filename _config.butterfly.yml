@@ -1364,7 +1364,7 @@ inject:
               audio:data.map(function(s){return{name:s.title||s.name,artist:s.author||s.artist,url:s.url,cover:s.pic||s.cover,lrc:s.lrc||''};})
             });
             ap.on('pause',saveState); ap.on('play',saveState);
-            ap.on('listswitch',saveState); ap.on('modechange',saveState);
+            ap.on('listswitch',saveState); ap.on('volumechange',saveState);
             if(saveTimer)clearInterval(saveTimer);
             saveTimer=setInterval(function(){ if(ap&&!ap.audio.paused)saveState(); },5000);
             window.addEventListener('beforeunload',saveState);
@@ -1372,32 +1372,35 @@ inject:
             insertToggle();
           }
 
-          if(window.APlayer){
-            fetch('https://api.i-meto.com/meting/api?server=netease&type=playlist&id='+PLID)
-              .then(function(r){return r.json();})
+          var METING_APIS=[
+            'https://api.injahow.cn/meting/',
+            'https://api.moeyao.cn/meting/'
+          ];
+          function showMusicError(msg){
+            var box=document.getElementById('aside-player');
+            if(box)box.innerHTML='<p style="font-size:.85em;color:var(--meta-color)">🎵 '+msg+'</p>';
+          }
+          function fetchPlaylist(i){
+            if(i>=METING_APIS.length){ showMusicError('音乐加载失败，请稍后重试'); return; }
+            fetch(METING_APIS[i]+'?server=netease&type=playlist&id='+PLID)
+              .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
               .then(function(data){
-                if(!data||!data.length)return;
+                if(!data||!data.length)throw new Error('empty playlist');
                 playlistCache=data;
                 createPlayer(data);
               })
-              .catch(function(){
-                document.getElementById('aside-player').innerHTML='<p style=\"font-size:.85em;color:var(--meta-color)\">🎵 加载失败</p>';
-              });
+              .catch(function(){ fetchPlaylist(i+1); });
+          }
+          if(window.APlayer){
+            fetchPlaylist(0);
           } else {
             var link=document.createElement('link');
             link.rel='stylesheet'; link.href='https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css';
             document.head.appendChild(link);
             var sc=document.createElement('script');
             sc.src='https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js';
-            sc.onload=function(){
-              fetch('https://api.i-meto.com/meting/api?server=netease&type=playlist&id='+PLID)
-                .then(function(r){return r.json();})
-                .then(function(data){
-                  if(!data||!data.length)return;
-                  playlistCache=data;
-                  createPlayer(data);
-                });
-            };
+            sc.onload=function(){ fetchPlaylist(0); };
+            sc.onerror=function(){ showMusicError('播放器脚本加载失败'); };
             document.head.appendChild(sc);
           }
         }
