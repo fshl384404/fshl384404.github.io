@@ -13,7 +13,7 @@ cover: /img/blog10.webp
 
 ## 背景
 
-最近读到了一篇题目很有趣的文章，名为[《The Emperor Has No Clothes: How to Code Claude Code in 200 Lines of Code》](https://www.mihaileric.com/The-Emperor-Has-No-Clothes/) ，作者 Mihail Eric 提出一个主张：Claude Code 的核心逻辑（约 200 行）只是一个「调用模型 → 解析工具调用 → 执行工具 → 结果回填 → 继续循环」的循环；产品其余约 9800 行代码属于安全与工程层（权限确认、沙箱、审计、预算管理）。
+最近读到了一篇题目很有趣的文章，名为[《The Emperor Has No Clothes: How to Code Claude Code in 200 Lines of Code》](https://www.mihaileric.com/The-Emperor-Has-No-Clothes/) ，作者 Mihail Eric 提出一个主张：Claude Code 的核心逻辑（约 200 行）只是一个由调用模型、解析工具调用、执行工具、结果回填、继续循环构成的循环；产品其余约 9800 行代码属于安全与工程层（权限确认、沙箱、审计、预算管理）。
 
 本文以此为灵感，给出一个可运行、可验证的实现（`minicode.py`）。核心循环（`Agent.run` + `_execute`）约 60 行，与扩展层在代码中明确分开；扩展层共七项：**回复进上下文、上下文预算与摘要压缩、跨会话长期记忆、最小权限沙箱、调用统计、流式输出、会话保存/恢复**。
 
@@ -149,7 +149,7 @@ SYSTEM_PROMPT = """你是 minicode，一个极简的 AI Agent。
 4. 任务完成后，用自然语言总结结果。"""
 ```
 
-作用：声明工具的存在与使用规则。其中第 3 条与 `append_reply` 的实现保持一致——提示词与运行时行为共同保证「回复进上下文」这一语义。提示词本身可视为 Agent 的「说明书」，修改它即可改变模型的行为模式，无需改动代码。
+作用：声明工具的存在与使用规则。其中第 3 条与 `append_reply` 的实现保持一致，提示词与运行时行为共同保证回复进上下文这一语义。提示词本身可视为 Agent 的说明书，修改它即可改变模型的行为模式，无需改动代码。
 
 ### token 估算（`estimate_tokens`）
 
@@ -159,7 +159,7 @@ def estimate_tokens(text):
     return cjk + (len(text) - cjk) // 4 + 1
 ```
 
-说明：按「CJK 字符约 1 token/字、其余字符约 4 字符/token」估算。这是启发式方法，用于上下文压缩的阈值判断；调用方传入的是**完整序列化后的消息**（含 `tool_calls` 参数）与工具 schema，避免只数 `content` 导致系统性低估（见 4.7 `_compact`）。真实 API 的精确用量以响应中的 `usage` 字段为准（`_track` 即使用该字段）。如需更高精度，可替换为 `tiktoken` 等真实 tokenizer，接口不变。
+说明：按 CJK 字符约 1 token/字、其余字符约 4 字符/token 估算。这是启发式方法，用于上下文压缩的阈值判断；调用方传入的是**完整序列化后的消息**（含 `tool_calls` 参数）与工具 schema，避免只数 `content` 导致系统性低估（见 4.7 `_compact`）。真实 API 的精确用量以响应中的 `usage` 字段为准（`_track` 即使用该字段）。如需更高精度，可替换为 `tiktoken` 等真实 tokenizer，接口不变。
 
 ### 长期记忆（`MemoryStore`）
 
@@ -200,7 +200,7 @@ class MemoryStore:
 
 - 持久化格式为 JSON 文件，`set()` 立即写盘，`load()` 容错处理文件缺失与损坏。
 - 检索为子串匹配（对 key 与 value 均匹配），满足演示需求；大规模场景应替换为向量检索。
-- 记忆的**注入**发生在 `Agent._system_messages()`：每次调用模型前，将全部记忆条目拼入 system 消息（见 4.7）。因此记忆属于「每轮主动可见的上下文」，而非「被动查询」——模型不需要先调用 `recall` 就知道已记住的事实。
+- 记忆的**注入**发生在 `Agent._system_messages()`：每次调用模型前，将全部记忆条目拼入 system 消息（见 4.7）。因此记忆属于每轮主动可见的上下文，而非被动查询，模型不需要先调用 `recall` 就知道已记住的事实。
 - `remember` / `recall` 本身也是工具（见 4.5），模型可通过工具写入或查询记忆，形成闭环。
 
 ### 安全原语（`_safe_eval`、`_safe_path`）
@@ -236,7 +236,7 @@ def _safe_eval(expr):
 
 **路径沙箱 `_safe_path`**：将相对路径解析到 `workdir` 内，`..` 越界直接抛出 `PermissionError`。与朴素 `abspath` 版本相比有两处加固：
 
-- **符号链接 / junction**：用 `realpath` 解析链接的真实目标——工作目录内指向外部的链接会被判为越界（Windows junction 同样适用）；
+- **符号链接 / junction**：用 `realpath` 解析链接的真实目标，工作目录内指向外部的链接会被判为越界（Windows junction 同样适用）；
 - **大小写**：比较前统一 `normcase`，兼容 Windows 大小写不敏感的文件系统。
 
 ```python
@@ -290,7 +290,7 @@ def run_cmd(cmd):
     return os.path.abspath(workdir)
 ```
 
-设计说明：`run_cmd` 不调用 `subprocess`，而是直接对白名单命令给出确定结果。这样既演示了「最小权限」思想，又避免 `shell=True` 带来的注入风险。`_execute` 对工具调用统一做 JSON 参数解析与异常兜底：
+设计说明：`run_cmd` 不调用 `subprocess`，而是直接对白名单命令给出确定结果。这样既演示了最小权限思想，又避免 `shell=True` 带来的注入风险。`_execute` 对工具调用统一做 JSON 参数解析与异常兜底：
 
 ```python
 def _execute(self, name, arguments):
@@ -310,7 +310,7 @@ def _execute(self, name, arguments):
 
 ### LLM 客户端
 
-**接口契约**：`chat(messages, tools) -> LLMResult`（非流式）与 `chat_stream(messages, tools, on_piece) -> LLMResult`（流式）。`Agent` 只依赖该接口，因此可对接任何 OpenAI 兼容服务——云端（OpenAI、DeepSeek、Moonshot）或本地（Ollama）无缝切换。
+**接口契约**：`chat(messages, tools) -> LLMResult`（非流式）与 `chat_stream(messages, tools, on_piece) -> LLMResult`（流式）。`Agent` 只依赖该接口，因此可对接任何 OpenAI 兼容服务，云端（OpenAI、DeepSeek、Moonshot）或本地（Ollama）无缝切换。
 
 **`LLMClient`（真实模型）**：
 
@@ -362,9 +362,9 @@ def chat(self, messages, tools=None):
 
 错误处理：`HTTPError` 抛出带状态码与响应体的 `RuntimeError`；`URLError`（网络错误）自动重试后再失败才抛出（见下文 `_open`）；`Agent.run` 会把这些错误统一包装后再向上抛，由 `repl`/`main` 兜底（见 4.7）。注意 `arguments` 是**字符串**，需要 `json.loads` 解析（见 `_execute`）。
 
-**本地 Ollama 接入**：Ollama 的 OpenAI 兼容端点为 `http://localhost:11434/v1`，无需 Key、无需 `Authorization` 头。与云端唯一的实际差异是模型名（如 `qwen2.5:3b`）与 `usage` 字段来自本地推理。qwen2.5 系列原生支持 function calling，但 3B 小模型对工具 schema 的遵循并不总是稳定——这是接入真实模型后才会暴露的坑（见第 6 节实测）。
+**本地 Ollama 接入**：Ollama 的 OpenAI 兼容端点为 `http://localhost:11434/v1`，无需 Key、无需 `Authorization` 头。与云端唯一的实际差异是模型名（如 `qwen2.5:3b`）与 `usage` 字段来自本地推理。qwen2.5 系列原生支持 function calling，但 3B 小模型对工具 schema 的遵循并不总是稳定，这是接入真实模型后才会暴露的坑（见第 6 节实测）。
 
-**流式输出（`chat_stream`，扩展 6）**：请求体加 `"stream": true`，响应变为 **SSE（Server-Sent Events）**——逐行 `data: {json}` 分片，以 `data: [DONE]` 结束。每个分片的关键字段在 `choices[0].delta`：
+**流式输出（`chat_stream`，扩展 6）**：请求体加 `"stream": true`，响应变为 **SSE（Server-Sent Events）**，逐行 `data: {json}` 分片，以 `data: [DONE]` 结束。每个分片的关键字段在 `choices[0].delta`：
 
 ```python
 def chat_stream(self, messages, tools=None, on_piece=None):
@@ -404,8 +404,8 @@ def chat_stream(self, messages, tools=None, on_piece=None):
 
 两个教学点：
 
-1. **`delta.content` 是增量**：`on_piece` 回调把每个分片实时交给上层打印（见 4.7 `_chat_stream`），实现「边生成边显示」。
-2. **`delta.tool_calls` 按 `index` 分片、`arguments` 是增量字符串**：必须按 index 累积拼接（`entry["function"]["arguments"] += …`），只处理 content 会丢掉工具调用。实测中一次 `calculate` 调用的参数就是横跨多个分片拼出来的。
+1. **`delta.content` 是增量**：`on_piece` 回调把每个分片实时交给上层打印（见 4.7 `_chat_stream`），实现边生成边显示。
+2. **`delta.tool_calls` 按 `index` 分片、`arguments` 是增量字符串**：必须按 index 累积拼接（`entry["function"]["arguments"] += …`），仅处理 content 会遗漏工具调用。实测中一次 `calculate` 调用的参数就是横跨多个分片拼出来的。
 
 注意：`usage` 只在服务端选择返回时才有（Ollama 的流式响应**不携带** `usage`，见第 7 节局限表）。
 
@@ -436,7 +436,7 @@ def _open(self, payload):
             raise RuntimeError(f"网络错误: {e.reason}") from e
 ```
 
-教学点（重试边界）：**只重试网络类错误（`URLError`：连不上/超时），不重试 `HTTPError`**——4xx（如 401 密钥错误）重试多少次都不会成功，只会放大延迟；而 `POST /chat/completions` 无副作用（不修改任何状态），所以重试安全。默认 `retries=2`，退避间隔 1s、2s。
+教学点（重试边界）：**只重试网络类错误（`URLError`：连不上/超时），不重试 `HTTPError`**，4xx（如 401 密钥错误）重试多少次都不会成功，只会放大延迟；而 `POST /chat/completions` 无副作用（不修改任何状态），所以重试安全。默认 `retries=2`，退避间隔 1s、2s。
 
 **后端选择逻辑**（`main()`）：
 
@@ -468,7 +468,7 @@ def _system_messages(self):
     return [{"role": "system", "content": sys_text}]
 ```
 
-每次进入循环时执行 `self.messages[0] = self._system_messages()[0]`，保证记忆实时可见。`messages[0]` 常驻为 system 消息，这是 `_compact` 中「保留所有 system 消息」的前提。
+每次进入循环时执行 `self.messages[0] = self._system_messages()[0]`，保证记忆实时可见。`messages[0]` 常驻为 system 消息，这是 `_compact` 中保留所有 system 消息的前提。
 
 **上下文压缩 `_compact` / `_summarize`**：
 
@@ -495,7 +495,7 @@ def _compact(self):
 
 算法步骤：
 
-1. 估算总 token 数；不超过 `max_tokens` 则直接返回。注意估算基于**完整序列化消息**（`json.dumps`，含 `tool_calls` 参数）**加上工具 schema 本身**，而不是只数 `content`——后者会系统性低估实际 prompt 大小。
+1. 估算总 token 数；不超过 `max_tokens` 则直接返回。注意估算基于**完整序列化消息**（`json.dumps`，含 `tool_calls` 参数）**加上工具 schema 本身**，而不是只数 `content`，后者会系统性低估实际 prompt 大小。
 2. 计算 system 消息数量 `sys_n`（基础 system 与既有摘要）。
 3. 划分：`middle` 为待压缩的旧消息（`messages[sys_n:-keep_turns]`），`tail` 为最近 `keep_turns` 条保留消息。
 4. 将 `middle` 压缩为一条 `[历史摘要]` system 消息，替换原 `middle`。
@@ -556,12 +556,12 @@ def run(self, user_input, echo=False):
 逐段说明：
 
 - 工具分支（①）：模型若返回 `tool_calls`，先入史助手消息（满足不变式 1），再逐个执行并回填 role=`tool` 消息（满足不变式 2），然后 `continue` 进入下一轮。工具执行失败也以字符串形式回填，循环不中断。
-- 回答分支（②）：`append_reply=True` 时最终回答入史（满足不变式 3）。这是「回复进上下文」的具体实现点：**模型的最终回答与用户输入、工具结果一样，都是后续上下文的组成部分**。`append_reply=False` 时该回答不入史，用于对比实验（第 6 节）。
-- 流式分支（★ 扩展 6）：`stream=True` 时改走 `_chat_stream`——它调用 `chat_stream` 并注册 `on_piece` 回调，**第一次收到文本增量时才打印 `[Agent]` 前缀**；若本次是工具调用轮（只有 `delta.tool_calls`，没有 content），不会出现孤立的 `[Agent]` 行。工具调用照常静默累积、执行。
+- 回答分支（②）：`append_reply=True` 时最终回答入史（满足不变式 3）。这是回复进上下文的具体实现点：**模型的最终回答与用户输入、工具结果一样，都是后续上下文的组成部分**。`append_reply=False` 时该回答不入史，用于对比实验（第 6 节）。
+- 流式分支（★ 扩展 6）：`stream=True` 时改走 `_chat_stream`，它调用 `chat_stream` 并注册 `on_piece` 回调，**第一次收到文本增量时才打印 `[Agent]` 前缀**；若本次是工具调用轮（只有 `delta.tool_calls`，没有 content），不会出现孤立的 `[Agent]` 行。工具调用照常静默累积、执行。
 - 异常兜底：`llm.chat` 的网络/协议错误会以 `RuntimeError` 抛出，交互模式下单轮失败不中断会话（见 4.8）。
 - 终止条件：模型不再返回 `tool_calls`，即视为任务完成；`max_steps`（默认 12，`--max-steps` 可配）为防死循环的硬上限。
 
-**可选自检 `_reflect_once`**：`reflect=True` 时，在最终回答后追加一条用户消息「请自我检查你上一条回答是否准确完整；若有问题请直接给出修正后的完整回答。」，再调用一次模型并将自检回复入史。代价为一次额外 LLM 调用；该调用失败时降级为占位文本，不影响主流程。
+**可选自检 `_reflect_once`**：`reflect=True` 时，在最终回答后追加一条自我检查指令作为用户消息（要求检查上一条回答是否准确完整，如有问题给出修正后的完整回答），再调用一次模型并将自检回复写入历史。代价为一次额外 LLM 调用；该调用失败时降级为占位文本，不影响主流程。
 
 **统计 `_track`**：
 
@@ -604,7 +604,7 @@ def load_session(self, path):
 | 存什么 | **全量消息历史**（user/assistant/tool 逐条） | **精选事实**（key-value） |
 | 粒度 | 完整对话现场 | 跨对话的事实摘要 |
 | 恢复方式 | 进程重启后原样恢复上下文 | 每轮注入 system 消息 |
-| 类比 | 浏览器的「恢复上次会话」 | 人的长期记忆 |
+| 类比 | 浏览器的恢复上次会话 | 人的长期记忆 |
 
 恢复时的关键一步是 `self.messages[0] = self._system_messages()[0]`：磁盘上的旧 system 消息可能携带过期记忆，必须按当前 `MemoryStore` 内容重建。`main()` 在启动时 `load_session`、退出时 `save_session`（见 4.8）。
 
@@ -621,7 +621,7 @@ def load_session(self, path):
 | `--keep-turns` | 6 | 压缩时保留的最近消息条数 |
 | `--memory` | `agent_memory.json` | 长期记忆文件路径 |
 | `--workdir` | `.` | 工具沙箱根目录 |
-| `--no-reply-context` | 关 | 关闭「回复进上下文」（对比实验） |
+| `--no-reply-context` | 关 | 关闭回复进上下文（对比实验） |
 | `--reflect` | 关 | 回答后追加一次自检 |
 | `--stream` | 关 | 流式输出：回答边生成边打印 |
 | `--session` | 无 | 会话文件：启动时恢复历史，退出时自动保存 |
@@ -635,7 +635,7 @@ def load_session(self, path):
 
 `demo()` 在 `_minicode_demo_tmp` 目录（演示沙箱，结束后清理）中构造三组实验，全部走真实模型（默认本地 Ollama 的 `qwen2.5:3b`）；单轮失败（如模型服务未启动、function calling 异常）由 `safe_run` 兜底，不中断整个演示：
 
-- 实验一：同一对话分别以 `append_reply=True/False` 运行，验证「回复进上下文」的差异；
+- 实验一：同一对话分别以 `append_reply=True/False` 运行，验证回复进上下文的差异；
 - 实验二：依次请求读文件、写文件、记住、回忆、计算、时间、echo、越权命令，覆盖工具循环、记忆与白名单拒绝；
 - 实验三：`max_tokens=300, keep_turns=2` 下灌入 5 轮消息，验证超预算后出现 `[历史摘要]`。
 
@@ -666,13 +666,13 @@ def load_session(self, path):
   - 工具注册表 `{name: (desc, schema, fn)}`，`_tool_schema()` 生成协议格式；
   - 响应中 `message.tool_calls` 的 `arguments` 是 JSON 字符串，需 `json.loads`；
   - 入史顺序：`assistant(tool_calls)` 在前，`tool(tool_call_id)` 在后；`continue` 继续循环。
-- 验证：真实模型提问「计算 1+1」，观察输出中出现工具调用与结果回填；工具执行失败（如读不存在的文件）时循环不崩溃。
+- 验证：向真实模型提问 `计算 1+1`，观察输出中出现工具调用与结果回填；工具执行失败（如读不存在的文件）时循环不崩溃。
 
 **步骤 3：回复即上下文**
 
 - 目标：最终回答默认入史。
 - 关键点：仅需在回答分支增加 `if append_reply: messages.append({"role": "assistant", "content": text})`。
-- 验证：第一轮让模型说出任意内容，第二轮问「你刚才说了什么」，模型能引用（真实模型路径直接生效）。
+- 验证：第一轮让模型说出任意内容，第二轮询问上一轮的回复内容，模型能引用（真实模型路径直接生效）。
 
 **步骤 4：上下文预算与压缩**
 
@@ -684,13 +684,13 @@ def load_session(self, path):
 
 - 目标：事实写入 JSON 文件并在每轮注入 system。
 - 关键点：`MemoryStore.set/search` 的读写与容错；`_system_messages()` 拼接 `[当前长期记忆]` 段；`remember`/`recall` 作为工具暴露。
-- 验证：进程 A 执行 `记住 作者 是 小明`，进程 B 执行 `回忆 作者`，能返回同一事实（第 6 节「跨进程记忆」为一次实测记录）。
+- 验证：进程 A 执行 `记住 作者 是 小明`，进程 B 执行 `回忆 作者`，能返回同一事实（第 6 节的跨进程记忆测试为一次实测记录）。
 
 **步骤 6：安全与可观测**
 
 - 目标：路径沙箱、命令白名单、调用统计。
 - 关键点：`_safe_path` 的前缀校验；`SAFE_COMMANDS` 白名单；`_track` 累加 `calls/in/out/cost`。
-- 验证：真实模型下"模型是否按剧本调用越权工具"不可控，因此安全原语建议**直接单测**：`python -c "import minicode as m; m._safe_path('.', '../x')"` 应抛 `PermissionError`，`m._safe_eval('9**9**9')` 应快速抛 `ValueError`；`--stats` 输出非零的调用次数。
+- 验证：真实模型下模型是否按剧本调用越权工具不可控，因此安全原语建议**直接单测**：`python -c "import minicode as m; m._safe_path('.', '../x')"` 应抛 `PermissionError`，`m._safe_eval('9**9**9')` 应快速抛 `ValueError`；`--stats` 输出非零的调用次数。
 
 **步骤 7：CLI 与演示**
 
@@ -702,7 +702,7 @@ def load_session(self, path):
 
 ## 运行验证（实测输出）
 
-环境：Python 3.13，Windows；本地 Ollama（`qwen2.5:3b`，1.8GB，OpenAI 兼容端点 `http://localhost:11434/v1`）。以下为一次实际运行记录——真实模型输出存在随机性，实验二的具体文本不保证逐字复现，但结构性结论稳定。
+环境：Python 3.13，Windows；本地 Ollama（`qwen2.5:3b`，1.8GB，OpenAI 兼容端点 `http://localhost:11434/v1`）。以下为一次实际运行记录，真实模型输出存在随机性，实验二的具体文本不保证逐字复现，但结构性结论稳定。
 
 ### 实验一：回复进上下文（开/关）
 
@@ -724,7 +724,7 @@ def load_session(self, path):
 [Agent] 今天天气真好，适合写代码。
 ```
 
-结论：开关打开时，第二轮模型能**引用自己第一轮的完整回答**（包括它的元评论）；关闭后，模型只能复述用户输入——因为它的回答没有入史，第二轮的上下文里只剩原始用户消息。差异的直接原因即 4.7 节不变式 3。
+结论：开关打开时，第二轮模型能**引用自己第一轮的完整回答**（包括它的元评论）；关闭后，模型只能复述用户输入，因为它的回答没有入史，第二轮的上下文里只剩原始用户消息。差异的直接原因即 4.7 节不变式 3。
 
 ### 实验二：工具循环（真实模型自主决策）
 
@@ -758,7 +758,7 @@ minicode 是一个迷你 AI Agent。
 要点：
 
 - 8 次请求中 7 次触发了正确的工具调用，读文件、写文件、记忆写入/检索、计算、时间、白名单命令全流程工作正常；
-- **记忆 key 由模型自主选择**：用户说「记住 作者 是 小明」，模型调用的是 `remember(key="author", …)`——中文输入被模型转成了英文 key；但检索时模型同样使用 `recall(keyword="author")`，闭环依然成立；
+- **记忆 key 由模型自主选择**：用户说 `记住 作者 是 小明`，模型调用的是 `remember(key="author", …)`，中文输入被模型转成了英文 key；但检索时模型同样使用 `recall(keyword="author")`，闭环依然成立；
 - **`rm -rf /` 被模型直接拒绝**：模型判断这是危险操作，拒绝调用工具并以文字说明。
 
 ### 实验三：超预算自动压缩
@@ -772,7 +772,7 @@ minicode 是一个迷你 AI Agent。
 [历史摘要] 用户请求汇报工作内容，但上下文目前仅包含关于 minicode 的基础介绍。……
 ```
 
-要点：`max_tokens=300, keep_turns=2` 下灌入 5 轮消息后触发压缩，出现多条 `[历史摘要]` system 消息，机制工作正常。注意 `qwen2.5:3b` 的摘要质量一般（内容有重复与发散）——这正是「摘要质量依赖模型能力」的真实体现，换用更大的模型或专门的压缩模型会明显改善（见扩展方向 2）。
+要点：`max_tokens=300, keep_turns=2` 下灌入 5 轮消息后触发压缩，出现多条 `[历史摘要]` system 消息，机制工作正常。注意 `qwen2.5:3b` 的摘要质量一般（内容有重复与发散），这正是摘要质量依赖模型能力的真实体现，换用更大的模型或专门的压缩模型会明显改善（见扩展方向 2）。
 
 ### 一次性提问与统计
 
@@ -799,7 +799,7 @@ $ python -X utf8 minicode.py --memory mem_test.json "回忆 语言"   # 独立�
   [工具] recall({"keyword":"language"}) → language: Python
 ```
 
-与实验二一致，模型把中文「语言」转成了英文 key `language`；跨进程检索依然命中——key 的形态不影响闭环。这是真实模型带来的「不按剧本走但依然正确」的典型例子。
+与实验二一致，模型把中文词 `语言` 转成了英文 key `language`；跨进程检索依然命中，key 的形态不影响闭环。这是真实模型偏离预设脚本却仍能正确完成的典型例子。
 
 ### 流式输出
 
@@ -813,8 +813,8 @@ $ python -X utf8 minicode.py --stream --stats "计算 123*456"
 
 两点观察：
 
-- 工具调用轮次没有 `[Agent]` 前缀——该轮只有 `delta.tool_calls` 没有 content，符合 4.7 的设计；
-- `--stats` 的**调用次数准确（2 次）**，但 token 统计为 0——Ollama 的流式响应不携带 `usage` 字段（见局限表）。切换到会返回 usage 的服务（如 OpenAI）即可恢复统计。
+- 工具调用轮次没有 `[Agent]` 前缀，该轮只有 `delta.tool_calls` 没有 content，符合 4.7 的设计；
+- `--stats` 的**调用次数准确（2 次）**，但 token 统计为 0，Ollama 的流式响应不携带 `usage` 字段（见局限表）。切换到会返回 usage 的服务（如 OpenAI）即可恢复统计。
 
 ### 会话保存/恢复
 
@@ -830,7 +830,7 @@ $ python -X utf8 minicode.py --session sess_test.json "回忆 语言"   # 独立
 [session] 会话已保存到 sess_test.json（9 条消息）
 ```
 
-第二个进程恢复了第一个进程的全部 5 条消息（system / user / assistant(tool_calls) / tool / assistant），因此「回忆 语言」是在完整上下文里接续进行的；对话结束后又保存为 9 条。会话文件内容即 `{"messages": [...], "stats": {...}}` 的 JSON（见 4.7）。
+第二个进程恢复了第一个进程的全部 5 条消息（system / user / assistant(tool_calls) / tool / assistant），因此 `回忆 语言` 是在完整上下文里接续进行的；对话结束后又保存为 9 条。会话文件内容即 `{"messages": [...], "stats": {...}}` 的 JSON（见 4.7）。
 
 ### 安全原语（单元验证）
 
@@ -886,9 +886,9 @@ PermissionError: 路径越界：link/secret.txt（只允许访问 …）
 
 ## 结语
 
-回到开篇抛出的问题：Claude Code 的 “皇帝” 真的没穿衣服吗？借助此次复刻实现，我们已经可以给出答案。
+回到开篇提出的问题：Claude Code 是否名副其实。借助本次复刻实现，可以给出答案。
 
-整个 Agent 的内核，其实就浓缩在 run () 与_execute () 构成的循环之中：调用大模型、解析工具调用、执行工具动作、回填执行结果，再进入下一轮迭代。Mihail Eric 的观点在本次复刻中得到印证：the core of these tools isn’t magic。其质是一套确定性执行循环，搭配一个输出具备不确定性的大模型。其余所有代码，都只是为了让这套循环能够落地真实生产环境。文中介绍的七项扩展，正是这上万行工程逻辑的教学缩影：长期记忆对应状态管理，上下文压缩解决成本问题，路径沙箱与命令白名单划定安全边界，调用统计实现系统可观测性，流式输出优化交互体验，会话保存完成数据持久化，回复入上下文则保障多轮对话的一致性。同时我们也在局限表中说明了教学实现做出的妥协：缺少权限确认、进程隔离、审计日志与并发控制。
+整个 Agent 的内核集中体现在 run() 与 _execute() 构成的循环之中：调用大模型、解析工具调用、执行工具动作、回填执行结果，再进入下一轮迭代。Mihail Eric 的观点在本次复刻中得到印证：the core of these tools isn't magic，其本质是一套确定性执行循环，搭配一个输出具备不确定性的大模型。其余所有代码，都只是为了让这套循环能够落地真实生产环境。文中介绍的七项扩展，正是这上万行工程逻辑的教学缩影：长期记忆对应状态管理，上下文压缩解决成本问题，路径沙箱与命令白名单划定安全边界，调用统计实现系统可观测性，流式输出优化交互体验，会话保存完成数据持久化，回复入上下文则保障多轮对话的一致性。同时我们也在局限表中说明了教学实现做出的妥协：缺少权限确认、进程隔离、审计日志与并发控制。
 
-更值得思考的是，内核与外围扩展的边界本身是动态变化的。两年前流式输出尚且属于锦上添花的体验优化，如今已经成为行业标配；当下广为使用的工具调用协议，未来也可能被全新范式替代。可无论外层外壳如何迭代，“观察‑决策‑行动‑再观察” 这套核心循环，大概率会长期延续。
+内核与外围扩展的边界本身是动态变化的。两年前流式输出仍属于体验优化，如今已成为行业标配；当下广泛使用的工具调用协议，未来也可能被新的范式替代。但无论外层如何演进，观察、决策、行动、再观察这一核心循环预计将长期延续。
 
