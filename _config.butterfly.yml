@@ -1372,14 +1372,15 @@ inject:
             insertToggle();
           }
 
-          /* Meting instances disagree about the same playlist: some truncate the
-             track list, others emit PHP warnings before the JSON body. So query
-             every instance in parallel, parse tolerantly, and keep the longest
-             list — a truncated response is not a failure, it just has fewer songs. */
+          /* Meting instances are not equally trustworthy. Some serve a stale copy
+             of the playlist — deleted tracks reappear, newly added ones are
+             missing — so "the response with the most tracks" picks the wrong
+             list. Query known-good instances in priority order and take the first
+             usable answer instead. parsePlaylist tolerates the PHP warnings that
+             some instances print before the JSON body. */
           var METING_APIS=[
             'https://meting.mikus.ink/api',
-            'https://api.moeyao.cn/meting/',
-            'https://api.injahow.cn/meting/'
+            'https://api.moeyao.cn/meting/'
           ];
           function showMusicError(msg){
             var box=document.getElementById('aside-player');
@@ -1392,22 +1393,19 @@ inject:
             if(!data.length)throw new Error('empty playlist');
             return data;
           }
-          function useBestPlaylist(lists){
-            if(!lists.length){ showMusicError('音乐加载失败，请稍后重试'); return; }
-            lists.sort(function(a,b){ return b.length-a.length; });
-            playlistCache=lists[0];
-            createPlayer(lists[0]);
-          }
           function loadPlaylist(){
-            var found=[], pending=METING_APIS.length;
-            function settle(){ if(--pending===0)useBestPlaylist(found); }
-            METING_APIS.forEach(function(base){
-              fetch(base+'?server=netease&type=playlist&id='+PLID)
+            var i=0;
+            function attempt(){
+              if(i>=METING_APIS.length){ showMusicError('音乐加载失败，请稍后重试'); return; }
+              fetch(METING_APIS[i++]+'?server=netease&type=playlist&id='+PLID)
                 .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); })
-                .then(function(text){ found.push(parsePlaylist(text)); })
-                .catch(function(){})
-                .then(settle);
-            });
+                .then(function(text){
+                  playlistCache=parsePlaylist(text);
+                  createPlayer(playlistCache);
+                })
+                .catch(attempt);
+            }
+            attempt();
           }
           if(window.APlayer){
             loadPlaylist();
