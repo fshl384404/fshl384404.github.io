@@ -7,7 +7,7 @@ categories:
 tags:
   - 深度学习
   - 强化学习
-description: 以奖励标量为主线，从多臂老虎机讲到 RLHF，再到语言模型强化学习中的信用分配、PPO/GRPO/GSPO 与评估偏差。
+description: 以奖励标量为主线，从多臂老虎机讲到 RLHF，再到语言模型强化学习中的信用分配、PPO/GRPO/GSPO 与评估偏差
 cover: /img/blog15.webp
 ---
 
