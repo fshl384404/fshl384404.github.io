@@ -6,7 +6,7 @@ categories:
   - 穷理
 tags:
   - 软件工程
-  - 软件生命周期
+  - 面向过程
   - C语言
 description: 以结构化方法为主线，讲解可行性研究、需求分析、概要设计、详细设计、编码、测试与维护的完整生命周期
 cover: /img/blog19.webp

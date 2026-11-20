@@ -6,8 +6,7 @@ categories:
   - 穷理
 tags:
   - Java
-  - Swing
-  - 图形界面
+  - GUI
 description: 以窗口、菜单、容器、常用组件、布局管理器与 ActionEvent 为主线，系统讲解 Java Swing 桌面界面开发的基础用法
 cover: /img/blog18.webp
 ---

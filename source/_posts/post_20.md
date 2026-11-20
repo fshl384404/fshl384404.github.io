@@ -3,11 +3,10 @@ title: 大数据入门：Hadoop MapReduce 与 Spark Shell
 date: 2026-11-22 23:00:00
 updated: 2026-11-22 23:00:00
 categories:
-  - 履践
+  - 穷理
 tags:
   - 大数据
   - Hadoop
-  - MapReduce
   - Spark
 description: 从大数据基本概念、Hadoop 与 Spark 的结构原理，到伪分布式部署、MapReduce 词频统计与 Spark Shell 数据分析
 cover: /img/blog20.webp
